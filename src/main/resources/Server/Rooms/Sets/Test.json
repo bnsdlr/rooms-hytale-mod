@@ -1,0 +1,12 @@
+{
+  "SetBlockTypes": [
+    {
+      "RotationYawPlacementOffset": "None"
+    },
+    {
+      "Offset": {
+        "X": 1
+      }
+    }
+  ]
+}

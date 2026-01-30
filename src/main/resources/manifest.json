@@ -1,14 +1,14 @@
 {
-    "Group": "Example",
-    "Name": "ExamplePlugin",
+    "Group": "Rooms",
+    "Name": "Rooms",
     "Version": "0.0.2",
-    "Description": "An example plugin for HyTale!",
+    "Description": "...",
     "Authors": [
         {
-            "Name": "It's you!"
+            "Name": "niemand"
         }
     ],
-    "Website": "example.org",
+    "Website": "",
     "ServerVersion": "*",
     "Dependencies": {
         
@@ -17,6 +17,6 @@
         
     },
     "DisabledByDefault": false,
-    "Main": "org.example.plugin.ExamplePlugin",
-    "IncludesAssetPack": true
+    "IncludesAssetPack": true,
+    "Main": "de.bsdlr.rooms.RoomsPlugin"
 }

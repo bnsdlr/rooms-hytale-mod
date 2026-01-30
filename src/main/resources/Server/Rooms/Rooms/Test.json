@@ -1,0 +1,17 @@
+{
+  "Group": "",
+  "MinArea": 10,
+  "MaxArea": 20,
+  "RoomBlocks": [
+    {
+      "BlockId": "Soil_Dirt",
+      "InheritFromRoomBlock": "Test"
+    },
+    {}
+  ],
+  "TranslationProperties": {
+    "Name": "server.rooms.Test.name",
+    "Description": "server.rooms.Test.description"
+  },
+  "Icon": "Icons/ItemCategories/Build-Roofs.png"
+}
