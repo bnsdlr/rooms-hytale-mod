@@ -1,0 +1,76 @@
+$C = "../Common.ui";
+
+@RoomInfoHud = Group {
+  @Title = "<placeholder>";
+  @Score = "<score>";
+  @Icon = "Common/Icons/ItemCategories/Build-Roof.png";
+  @Description = "Some placeholder description.";
+  @Width = 420;
+
+  Anchor: (Width: @Width);
+  LayoutMode: Top;
+
+  Background: (TexturePath: "Common/ContainerPatch.png", Border: 23);
+  Padding: (Full: 16);
+
+  // ───────── HEADER ─────────
+  Group {
+    LayoutMode: Left;
+    Anchor: (Height: 32, Bottom: 12);
+
+    // Icon + title
+    Group {
+      LayoutMode: Left;
+      FlexWeight: 1;
+
+      Sprite {
+        Anchor: (Width: 32, Height: 32, Right: 10);
+        TexturePath: @Icon;
+      }
+
+      Label {
+        Text: @Title;
+        Anchor: (Height: 32);
+        Style: (
+          ...$C.@TitleStyle,
+          FontSize: 18,
+          RenderUppercase: false
+        );
+      }
+    }
+
+    // Score (top right)
+    Label {
+      Text: @Score;
+      Anchor: (Height: 32);
+      Style: (
+        FontSize: 18,
+        TextColor: #f2d27c,
+        RenderBold: true,
+//        HorizontalAlignment: Right,
+        VerticalAlignment: Center
+      );
+    }
+  }
+
+  // ───────── DESCRIPTION ─────────
+  Label {
+    Text: @Description;
+//    Wrap: true;
+    Style: (
+      ...$C.@DefaultLabelStyle,
+      FontSize: 16
+    );
+  }
+};
+
+$C.@PageOverlay {
+  LayoutMode: Middle;
+
+  @RoomInfoHud #Room {
+//    Title: "<placeholder title>";
+//    Score: "+120";
+//    Icon: "Common/Icons/ItemCategories/Build-Roof.png";
+//    Description: "Some placeholder description that proves the container grows downward correctly when text wraps.";
+  }
+}

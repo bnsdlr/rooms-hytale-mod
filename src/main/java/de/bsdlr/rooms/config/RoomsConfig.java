@@ -17,8 +17,8 @@ public class RoomsConfig {
     private int maxRoomHeight = 100;
 
     public void validate() {
-        if (minRoomHeight < 1) minRoomHeight = 1;
-        if (maxRoomHeight < 1) maxRoomHeight = 1;
+        if (minRoomHeight < 2) minRoomHeight = 2;
+        if (maxRoomHeight < minRoomHeight) maxRoomHeight = minRoomHeight;
     }
 
     public int getMinRoomHeight() {

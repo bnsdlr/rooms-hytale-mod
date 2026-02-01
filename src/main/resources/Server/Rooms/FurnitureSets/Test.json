@@ -1,0 +1,25 @@
+{
+  "SetBlockTypes": [
+    {
+      "RotationYawPlacementOffset": "None",
+      "BlockId": "Soil_Dirt",
+      "Offset": {
+        "Z": 0
+      }
+    },
+    {
+      "Offset": {
+        "X": 1,
+        "Y": 0
+      },
+      "BlockId": "Rock_Stone"
+    },
+    {
+      "Offset": {
+        "X": 2,
+        "Y": 0
+      },
+      "BlockId": "Rock_Bedrock"
+    }
+  ]
+}

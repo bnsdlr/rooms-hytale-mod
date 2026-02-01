@@ -9,7 +9,7 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import de.bsdlr.rooms.ui.RoomUI;
+import de.bsdlr.rooms.ui.RoomHud;
 
 import javax.annotation.Nonnull;
 
@@ -24,7 +24,7 @@ public class TestUICommand extends AbstractPlayerCommand {
             Player player = ctx.senderAs(Player.class);
 
             if (player.getHudManager().getCustomHud() == null) {
-                player.getHudManager().setCustomHud(playerRef, new RoomUI(playerRef));
+                player.getHudManager().setCustomHud(playerRef, new RoomHud(playerRef));
                 ctx.sendMessage(Message.raw("Room ui visible"));
             } else {
                 player.getHudManager().resetHud(playerRef);

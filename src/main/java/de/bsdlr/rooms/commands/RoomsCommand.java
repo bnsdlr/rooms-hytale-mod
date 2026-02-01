@@ -1,5 +1,7 @@
 package de.bsdlr.rooms.commands;
 
+import com.hypixel.hytale.component.AddReason;
+import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
@@ -10,10 +12,13 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import de.bsdlr.rooms.detector.RoomDetector;
+import de.bsdlr.rooms.RoomsPlugin;
 import de.bsdlr.rooms.exceptions.FailedToDetectRoomException;
-import de.bsdlr.rooms.room.Room;
-import de.bsdlr.rooms.ui.RoomUI;
+import de.bsdlr.rooms.services.room.Room;
+import de.bsdlr.rooms.services.room.RoomDetector;
+import de.bsdlr.rooms.services.room.RoomEntity;
+import de.bsdlr.rooms.services.room.RoomManager;
+import de.bsdlr.rooms.ui.RoomHud;
 
 import javax.annotation.Nonnull;
 
@@ -39,6 +44,10 @@ public class RoomsCommand extends AbstractPlayerCommand {
                 ctx.sendMessage(Message.raw("got NO room"));
                 return;
             }
+
+            RoomManager roomManager = RoomsPlugin.get().getRoomManager();
+            roomManager.addRoomEntity(new RoomEntity(room));
+
             ctx.sendMessage(Message.raw("room block count: " + room.getAllBlocks().size()));
             ctx.sendMessage(Message.raw("light source: " + room.getLightSources().size()));
             ctx.sendMessage(Message.raw("empty block count: " + room.getEmpty().size()));
@@ -47,23 +56,21 @@ public class RoomsCommand extends AbstractPlayerCommand {
             ctx.sendMessage(Message.raw("entrance count: " + room.getEntrances().size()));
             ctx.sendMessage(Message.raw("window count: " + room.getWindows().size()));
 
+            Holder<EntityStore> holder = room.createEntity(world, position);
+            ctx.sendMessage(Message.raw("added new room entity"));
+            store.addEntity(holder, AddReason.SPAWN);
+
             if (ctx.sender() instanceof Player) {
                 Player player = ctx.senderAs(Player.class);
 
                 if (player.getHudManager().getCustomHud() == null) {
-                    player.getHudManager().setCustomHud(playerRef, new RoomUI(playerRef));
+                    player.getHudManager().setCustomHud(playerRef, new RoomHud(playerRef));
                     ctx.sendMessage(Message.raw("Room ui visible"));
                 }
-                if (player.getHudManager().getCustomHud() instanceof RoomUI roomUI) {
+                if (player.getHudManager().getCustomHud() instanceof RoomHud roomHud) {
                     ctx.sendMessage(Message.raw("Setting room ui values..."));
-                    roomUI.setRoomName("Some room name");
-                    roomUI.setScore(room.getAllBlocks().size());
-                    roomUI.setEmptyBlockCount(room.getEmpty().size());
-                    roomUI.setEntranceCount(room.getEntrances().size());
-                    roomUI.setFurnitureCount(room.getFurnitures().size());
-                    roomUI.setLightSourceCount(room.getLightSources().size());
-                    roomUI.setSolidBlockCount(room.getSolidBlocks().size());
-                    roomUI.setWindowCount(room.getWindows().size());
+//                    roomHud.updateRoomName("Some room name");
+//                    roomHud.updateScore(room.getAllBlocks().size());
                 } else {
                     ctx.sendMessage(Message.raw("there is no room ui..."));
                 }

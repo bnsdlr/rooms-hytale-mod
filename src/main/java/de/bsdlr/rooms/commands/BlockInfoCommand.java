@@ -13,7 +13,11 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.TargetUtil;
-import de.bsdlr.rooms.room.block.BlockRole;
+import de.bsdlr.rooms.services.room.block.RoomBlockRole;
+import de.bsdlr.rooms.services.set.FurnitureSet;
+import de.bsdlr.rooms.services.set.FurnitureSetDetector;
+import de.bsdlr.rooms.services.set.FurnitureSetType;
+import de.bsdlr.rooms.utils.ChunkManager;
 
 import javax.annotation.Nonnull;
 
@@ -61,12 +65,28 @@ public class BlockInfoCommand extends AbstractPlayerCommand {
         ctx.sendMessage(Message.raw("opacity: " + type.getOpacity()));
         ctx.sendMessage(Message.raw("draw type: " + type.getDrawType()));
         ctx.sendMessage(Message.raw("custom model: " + type.getCustomModel()));
-        ctx.sendMessage(Message.raw("is solid block: " + BlockRole.isSolidBlock(type)));
-        ctx.sendMessage(Message.raw("is furniture: " + BlockRole.isFurniture(type)));
-        ctx.sendMessage(Message.raw("is entrance: " + BlockRole.isEntrance(type)));
-        ctx.sendMessage(Message.raw("is window: " + BlockRole.isWindow(type)));
-        ctx.sendMessage(Message.raw("is room wall: " + BlockRole.isRoomWall(type)));
-        ctx.sendMessage(Message.raw("block role: " + BlockRole.getRole(blockId, type)));
+        ctx.sendMessage(Message.raw("is solid block: " + RoomBlockRole.isSolidBlock(type)));
+        ctx.sendMessage(Message.raw("is furniture: " + RoomBlockRole.isFurniture(type)));
+        ctx.sendMessage(Message.raw("is entrance: " + RoomBlockRole.isEntrance(type)));
+        ctx.sendMessage(Message.raw("is window: " + RoomBlockRole.isWindow(type)));
+        ctx.sendMessage(Message.raw("is room wall: " + RoomBlockRole.isRoomWall(type)));
+        ctx.sendMessage(Message.raw("block role: " + RoomBlockRole.getRole(blockId, type)));
+
+        ChunkManager chunkManager = new ChunkManager(world);
+
+        int counter = 0;
+
+        for (FurnitureSetType furnitureSetType : FurnitureSetType.getAssetStore().getAssetMap().getAssetMap().values()) {
+            FurnitureSet furnitureSet = FurnitureSetDetector.getFurnitureSetAt(chunkManager, furnitureSetType, pos.x, pos.y, pos.z);
+            if (furnitureSet != null) {
+                ctx.sendMessage(Message.raw("Block is part of furniture set: " + furnitureSetType.getId()));
+                counter++;
+            }
+        }
+
+        if (counter == 0) {
+            ctx.sendMessage(Message.raw("Block is not part of a furniture set."));
+        }
 
 //        BlockBoundingBoxes bbb = BlockBoundingBoxes.getAssetMap().getAsset(type.getHitboxTypeIndex());
 //        if (bbb == null) return;

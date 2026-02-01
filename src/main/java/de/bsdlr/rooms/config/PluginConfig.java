@@ -3,32 +3,41 @@ package de.bsdlr.rooms.config;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.common.CommonAssetValidator;
 
 public class PluginConfig {
     public static final BuilderCodec<PluginConfig> CODEC = BuilderCodec.builder(PluginConfig.class, PluginConfig::new)
-            .append(new KeyedCodec<>("ScanRadius", Codec.INTEGER),
+            .append(new KeyedCodec<>("ScanRadius", Vector3i.CODEC),
                     PluginConfig::setScanRadius,
-                    PluginConfig::getScanRadius).add()
+                    PluginConfig::getScanRadius)
+            .addValidator(new ScanRadiusValidator())
+            .add()
             .append(new KeyedCodec<>("Rooms", RoomsConfig.CODEC),
                     PluginConfig::setRoomsConfig,
-                    PluginConfig::getRoomsConfig).add()
+                    PluginConfig::getRoomsConfig)
+            .addValidator(new RoomsConfigValidator())
+            .add()
             .build();
     public static final CommonAssetValidator ICON_VALIDATOR = new CommonAssetValidator("png", "Icons/Rooms", "Icons/ItemCategories");
-    private int scanRadius = 100;
+    private Vector3i scanRadius = new Vector3i(100, 50, 100);
     private RoomsConfig roomsConfig = new RoomsConfig();
 
     public void validate() {
         roomsConfig.validate();
-        if (scanRadius < 0) scanRadius = 1;
+        if (scanRadius.x < 0) scanRadius.setX(1);
+        if (scanRadius.y < 0) scanRadius.setY(1);
+        if (scanRadius.z < 0) scanRadius.setZ(1);
     }
 
-    public int getScanRadius() {
+    public Vector3i getScanRadius() {
         return scanRadius;
     }
 
-    public void setScanRadius(int scanRadius) {
-        if (scanRadius < 0) return;
+    public void setScanRadius(Vector3i scanRadius) {
+        if (scanRadius.x < 0) scanRadius.setX(1);
+        if (scanRadius.y < 0) scanRadius.setY(1);
+        if (scanRadius.z < 0) scanRadius.setZ(1);
         this.scanRadius = scanRadius;
     }
 

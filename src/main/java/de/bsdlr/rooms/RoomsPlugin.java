@@ -1,31 +1,51 @@
 package de.bsdlr.rooms;
 
+import com.hypixel.hytale.component.ComponentRegistryProxy;
+import com.hypixel.hytale.component.ComponentType;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.event.EventPriority;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.asset.HytaleAssetStore;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.Config;
 import de.bsdlr.rooms.commands.*;
 import de.bsdlr.rooms.config.PluginConfig;
-import de.bsdlr.rooms.room.RoomType;
-import de.bsdlr.rooms.room.RoomTypeAssetMap;
-import de.bsdlr.rooms.set.SetType;
-import de.bsdlr.rooms.set.SetTypeAssetMap;
+import de.bsdlr.rooms.services.room.RoomManager;
+import de.bsdlr.rooms.services.room.RoomType;
+import de.bsdlr.rooms.services.room.RoomTypeAssetMap;
+import de.bsdlr.rooms.services.set.FurnitureSetType;
+import de.bsdlr.rooms.services.set.FurnitureSetTypeAssetMap;
+import de.bsdlr.rooms.storage.PlayerStorageManager;
+import de.bsdlr.rooms.ui.HudComponent;
+import de.bsdlr.rooms.ui.HudManager;
+
+import java.util.concurrent.TimeUnit;
 
 public class RoomsPlugin extends JavaPlugin {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private static RoomsPlugin instance;
 
     private final Config<PluginConfig> config;
+    private final RoomManager roomManager;
+    private final PlayerStorageManager playerStorageManager;
 
-    public static RoomsPlugin getInstance() {
+    public static RoomsPlugin get() {
         return instance;
     }
 
     public RoomsPlugin(JavaPluginInit init) {
         super(init);
         config = this.withConfig("config", PluginConfig.CODEC);
+        roomManager = new RoomManager();
+        playerStorageManager = new PlayerStorageManager();
     }
 
     @Override
@@ -42,7 +62,36 @@ public class RoomsPlugin extends JavaPlugin {
         this.getCommandRegistry().registerCommand(new BlockInfoCommand());
         this.getCommandRegistry().registerCommand(new RotateCommand());
         this.getCommandRegistry().registerCommand(new TestUICommand());
-        this.getCommandRegistry().registerCommand(new TestCommand());
+        this.getCommandRegistry().registerCommand(new SetCommand());
+
+        ComponentRegistryProxy<EntityStore> entityStoreRegistry = this.getEntityStoreRegistry();
+        HudComponent.setComponentType(entityStoreRegistry.registerComponent(HudComponent.class, "Rooms_Hud", HudComponent.CODEC));
+
+        this.getEventRegistry().register(
+                EventPriority.EARLY,
+                PlayerDisconnectEvent.class,
+                event -> {
+                    if (event.getPlayerRef().getReference() != null) {
+                        if (event.getPlayerRef().getWorldUuid() == null) {
+                            LOGGER.atInfo().log("players world uuid is null");
+                            return;
+                        }
+
+                        World world = Universe.get().getWorld(event.getPlayerRef().getWorldUuid());
+                        if (world == null) {
+                            LOGGER.atInfo().log("world is null.");
+                            return;
+                        }
+
+                        world.execute(() -> {
+                            LOGGER.atInfo().log("removing hud component");
+                            Store<EntityStore> store = event.getPlayerRef().getReference().getStore();
+                            store.removeComponentIfExists(event.getPlayerRef().getReference(), HudComponent.getComponentType());
+                            LOGGER.atInfo().log("removed hud component");
+                        });
+                    }
+                }
+        );
 
         RoomTypeAssetMap<String, RoomType> roomTypeAssetMap = new RoomTypeAssetMap<>(RoomType[]::new, RoomType::getGroup);
         HytaleAssetStore.Builder<String, RoomType, RoomTypeAssetMap<String, RoomType>> roomTypeAssetStoreBuilder = HytaleAssetStore.builder(RoomType.class, roomTypeAssetMap);
@@ -57,19 +106,21 @@ public class RoomsPlugin extends JavaPlugin {
 //        roomTypeAssetStoreBuilder.setIdProvider(Item.class);
         this.getAssetRegistry().register(roomTypeAssetStoreBuilder.build());
 
-        SetTypeAssetMap<String, SetType> setTypeAssetMap = new SetTypeAssetMap<>(SetType[]::new, SetType::getGroup);
-        HytaleAssetStore.Builder<String, SetType, SetTypeAssetMap<String, SetType>> setTypeAssetStoreBuilder = HytaleAssetStore.builder(SetType.class, setTypeAssetMap);
-        setTypeAssetStoreBuilder.setPath("Rooms/Sets");
-        setTypeAssetStoreBuilder.setCodec(SetType.CODEC);
-        setTypeAssetStoreBuilder.setKeyFunction(SetType::getId);
+        FurnitureSetTypeAssetMap<String, FurnitureSetType> furnitureSetTypeAssetMap = new FurnitureSetTypeAssetMap<>(FurnitureSetType[]::new, FurnitureSetType::getGroup);
+        HytaleAssetStore.Builder<String, FurnitureSetType, FurnitureSetTypeAssetMap<String, FurnitureSetType>> setTypeAssetStoreBuilder = HytaleAssetStore.builder(FurnitureSetType.class, furnitureSetTypeAssetMap);
+        setTypeAssetStoreBuilder.setPath("Rooms/FurnitureSets");
+        setTypeAssetStoreBuilder.setCodec(FurnitureSetType.CODEC);
+        setTypeAssetStoreBuilder.setKeyFunction(FurnitureSetType::getId);
         setTypeAssetStoreBuilder.loadsAfter(BlockType.class);
-        setTypeAssetStoreBuilder.setReplaceOnRemove(SetType::getUnknownFor);
+        setTypeAssetStoreBuilder.setReplaceOnRemove(FurnitureSetType::getUnknownFor);
         this.getAssetRegistry().register(setTypeAssetStoreBuilder.build());
     }
 
     @Override
     protected void start() {
         LOGGER.atInfo().log("Plugin starting!");
+
+        HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(HudManager::handle, 300, 300, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -81,5 +132,9 @@ public class RoomsPlugin extends JavaPlugin {
 
     public Config<PluginConfig> getConfig() {
         return this.config;
+    }
+
+    public RoomManager getRoomManager() {
+        return roomManager;
     }
 }
