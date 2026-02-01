@@ -1,14 +1,21 @@
 package de.bsdlr.rooms.ui;
 
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import de.bsdlr.rooms.services.room.RoomEntity;
+import de.bsdlr.rooms.services.room.RoomType;
 
 import javax.annotation.Nonnull;
 
 public class RoomHud extends CustomUIHud {
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+    private static final String NAME_ID = "#Name.TextSpans";
+    private static final String SCORE_ID = "#Score.TextSpans";
+    private static final String DESCRIPTION_ID = "#Description.TextSpans";
+
     public RoomHud(@Nonnull PlayerRef playerRef) {
         super(playerRef);
     }
@@ -19,8 +26,16 @@ public class RoomHud extends CustomUIHud {
     }
 
     public void update(@Nonnull RoomEntity room) {
-        updateRoomName(room.getFormattedId());
+        RoomType type = room.getType();
+        String name = type.getTranslationProperties().getName() == null
+                ? room.getId()
+                : type.getTranslationProperties().getName();
+        LOGGER.atInfo().log("name: %s", name);
+        LOGGER.atInfo().log("score: %d", room.getScore());
+        LOGGER.atInfo().log("description: %s", type.getTranslationProperties().getDescription());
+        updateName(Message.raw(name).color(type.getColorOrFallback().toString()));
         updateScore(room.getScore());
+        updateDescription(type.getTranslationProperties().getDescription());
     }
 
     private void update(String id, Message message) {
@@ -29,15 +44,19 @@ public class RoomHud extends CustomUIHud {
         update(false, uiCommandBuilder);
     }
 
-    public void updateRoomName(Message roomName) {
-        update("#Name.TextSpans", roomName);
+    public void updateName(Message roomName) {
+        update(NAME_ID, roomName);
     }
 
     public void updateScore(int score) {
-        update("#Score.TextSpans", Message.raw(String.valueOf(score)));
+        update(SCORE_ID, Message.raw(String.valueOf(score)));
     }
 
-    public void updateDescription(Message description) {
-        update("#Score.TextSpans", description);
+    public void updateDescription(String description) {
+        if (description == null) {
+            update(DESCRIPTION_ID, Message.empty());
+        } else {
+            update(DESCRIPTION_ID, Message.raw(description));
+        }
     }
 }

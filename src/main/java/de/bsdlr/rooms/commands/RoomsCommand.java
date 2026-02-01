@@ -56,10 +56,6 @@ public class RoomsCommand extends AbstractPlayerCommand {
             ctx.sendMessage(Message.raw("entrance count: " + room.getEntrances().size()));
             ctx.sendMessage(Message.raw("window count: " + room.getWindows().size()));
 
-            Holder<EntityStore> holder = room.createEntity(world, position);
-            ctx.sendMessage(Message.raw("added new room entity"));
-            store.addEntity(holder, AddReason.SPAWN);
-
             if (ctx.sender() instanceof Player) {
                 Player player = ctx.senderAs(Player.class);
 

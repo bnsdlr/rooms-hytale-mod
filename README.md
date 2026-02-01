@@ -6,8 +6,9 @@
 - [ ] rooms
     - [ ] more complex room definitions
       - [ ] block that matches regex
-      - [ ] 
+      - [ ] blocks of group
     - [ ] rarity
+    - [ ] min/max height/area
     - [ ] buffs
     - [ ] requirements
     - [ ] levels
@@ -16,3 +17,4 @@
     - [ ] place anywhere on tables
     - [ ] any rotation (of the set)
     - [ ] add required rotation (relative)
+- [ ] if multiple rooms match, give ability to choose from them.

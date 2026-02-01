@@ -5,9 +5,9 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.set.SetCodec;
 import com.hypixel.hytale.server.core.Message;
+import de.bsdlr.rooms.services.quality.Quality;
 
 import javax.annotation.Nonnull;
-import java.awt.*;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -42,7 +42,8 @@ public class RoomEntity {
 
     public RoomEntity(@Nonnull Room room) {
         this.uuid = UUID.randomUUID();
-        this.id = room.getId() == null ? "Room" : room.getId();
+        RoomType type = room.findRoomType();
+        this.id = type.getId() == null ? "Room" : type.getId();
         this.score = room.calculateScore();
         this.blocks = room.getEncodedBlocks();
     }
@@ -57,11 +58,6 @@ public class RoomEntity {
 
     public String getId() {
         return id;
-    }
-
-    public Message getFormattedId() {
-        RoomType type = getType();
-        return Message.raw(id).color(type == null ? Color.WHITE : type.getRarity().getColor());
     }
 
     public int getScore() {

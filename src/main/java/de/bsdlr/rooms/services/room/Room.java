@@ -3,37 +3,25 @@ package de.bsdlr.rooms.services.room;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.set.SetCodec;
-import com.hypixel.hytale.component.Holder;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import com.hypixel.hytale.server.core.asset.type.model.config.Model;
-import com.hypixel.hytale.server.core.asset.type.model.config.ModelAsset;
-import com.hypixel.hytale.server.core.entity.UUIDComponent;
-import com.hypixel.hytale.server.core.modules.entity.component.BoundingBox;
-import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent;
-import com.hypixel.hytale.server.core.modules.entity.component.PersistentModel;
-import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
-import com.hypixel.hytale.server.core.modules.entity.tracker.NetworkId;
-import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import de.bsdlr.rooms.exceptions.FailedToDetectRoomException;
 import de.bsdlr.rooms.services.room.block.RoomBlock;
 import de.bsdlr.rooms.services.room.block.RoomBlockRole;
+import de.bsdlr.rooms.services.room.block.RoomBlockType;
 import de.bsdlr.rooms.utils.Utils;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import javax.annotation.Nonnull;
+import java.util.*;
 import java.util.function.Predicate;
 
 public class Room {
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     public static final BuilderCodec CODEC = BuilderCodec.builder(Room.class, Room::new)
             .append(new KeyedCodec<>("AllBlocks", new SetCodec(RoomBlock.CODEC, HashSet::new, false), true),
                     Room::setAllBlocks,
                     Room::getAllBlocks).add()
             .build();
-    private String id;
     private Set<RoomBlock> allRoomBlocks = new HashSet<>();
     private final Set<RoomBlock> solidRoomBlocks = new HashSet<>();
     private final Set<RoomBlock> furnitures = new HashSet<>();
@@ -43,10 +31,6 @@ public class Room {
     private final Set<RoomBlock> lightSources = new HashSet<>();
 
     Room() {
-    }
-
-    private void setId(String id) {
-        this.id = id;
     }
 
     private void setAllBlocks(Set<RoomBlock> roomBlocks) {
@@ -66,10 +50,6 @@ public class Room {
             case ENTRANCE -> entrances.add(roomBlock);
             case WINDOW -> windows.add(roomBlock);
         }
-    }
-
-    public String getId() {
-        return id;
     }
 
     public Set<RoomBlock> getAllBlocks() {
@@ -100,25 +80,54 @@ public class Room {
         return lightSources;
     }
 
-    public Holder<EntityStore> createEntity(World world, Vector3d position) {
-        Holder<EntityStore> holder = EntityStore.REGISTRY.newHolder();
+    public Map<String, Integer> getBlockId2Count() {
+        Map<String, Integer> blockId2Count = new HashMap<>();
 
-        ModelAsset modelAsset = ModelAsset.getAssetMap().getAsset("Minecart");
-        assert modelAsset != null;
-        Model model = Model.createScaledModel(modelAsset, 1.0f);
+        for (RoomBlock block : allRoomBlocks) {
+            BlockType type = BlockType.getAssetMap().getAsset(block.getBlockId());
+            if (type == null) continue;
+            blockId2Count.merge(type.getId(), 1, Integer::sum);
+        }
 
-        TransformComponent transform = new TransformComponent(position, new Vector3f(0, 0, 0));
+        return blockId2Count;
+    }
 
-        holder.addComponent(TransformComponent.getComponentType(), transform);
-        holder.addComponent(PersistentModel.getComponentType(), new PersistentModel(model.toReference()));
-        holder.addComponent(ModelComponent.getComponentType(), new ModelComponent(model));
-        assert model.getBoundingBox() != null;
-        holder.addComponent(BoundingBox.getComponentType(), new BoundingBox(model.getBoundingBox()));
-        holder.addComponent(NetworkId.getComponentType(), new NetworkId(world.getEntityStore().getStore().getExternalData().takeNextNetworkId()));
+    public List<RoomType> getMatching() {
+        Map<String, Integer> blockId2Count = getBlockId2Count();
+        List<RoomType> matching = new ArrayList<>();
 
-        holder.ensureComponent(UUIDComponent.getComponentType());
+        for (RoomType type : RoomType.getAssetMap().getAssetMap().values()) {
+            boolean matches = true;
+            LOGGER.atInfo().log("block count: %d", type.getRoomBlocks().length);
+            for (RoomBlockType blockType : type.getRoomBlocks()) {
+                Integer count = blockId2Count.getOrDefault(blockType.getBlockId(), 0);
+                if (blockType.getMinCount() > count && blockType.getMaxCount() < count) {
+                    matches = false;
+                    break;
+                }
+            }
 
-        return holder;
+            if (matches) {
+                matching.add(type);
+            }
+        }
+
+        return matching;
+    }
+
+    @Nonnull
+    public RoomType findRoomType() {
+        List<RoomType> matching = getMatching();
+        if (matching.isEmpty()) return RoomType.DEFAULT;
+        if (matching.size() == 1) return matching.getFirst();
+
+        RoomType best = null;
+
+        for (RoomType type : matching) {
+            best = RoomType.getBetter(type, best);
+        }
+
+        return best == null ? RoomType.DEFAULT : best;
     }
 
     public Set<Long> getEncodedBlocks() {

@@ -1,17 +1,7 @@
 {
-  "Group": "",
-  "MinArea": 10,
-  "MaxArea": 20,
-  "RoomBlocks": [],
-  "TranslationProperties": {
-    "Name": "server.rooms.rooms.Test.name",
-    "Description": "server.rooms.rooms.Test.description"
-  },
-  "Icon": "Icons/ItemCategories/Build-Roofs.png",
-  "RoomTranslationProperties": {
-    "Name": "server.rooms.rooms.Test.name"
-  },
   "Sets": [
-    {}
-  ]
+    "Table",
+    "Test"
+  ],
+  "Quality": "Common"
 }

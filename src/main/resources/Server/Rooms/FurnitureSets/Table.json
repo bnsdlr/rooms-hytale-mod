@@ -1,0 +1,55 @@
+{
+  "SetBlockTypes": [
+    {
+      "BlockId": "Furniture_Village_Table"
+    },
+    {
+      "BlockId": "Furniture_Village_Chair",
+      "Offset": {
+        "Z": -2,
+        "X": -1
+      }
+    },
+    {
+      "BlockId": "Furniture_Village_Chair",
+      "Offset": {
+        "Z": -2,
+        "X": 0
+      }
+    },
+    {
+      "BlockId": "Furniture_Village_Chair",
+      "Offset": {
+        "Z": 1
+      }
+    },
+    {
+      "BlockId": "Furniture_Village_Chair",
+      "Offset": {
+        "Z": 1,
+        "X": -1
+      }
+    },
+    {
+      "BlockId": "Food_Pie_Apple",
+      "Offset": {
+        "Y": 1,
+        "X": -1
+      }
+    },
+    {
+      "BlockId": "Food_Salad_Mushroom",
+      "Offset": {
+        "Y": 1
+      }
+    },
+    {
+      "Offset": {
+        "Y": 1,
+        "Z": -1
+      },
+      "BlockId": "Deco_Mug"
+    }
+  ],
+  "Group": "Tavern"
+}

@@ -1,6 +1,7 @@
 package de.bsdlr.rooms.services.set;
 
 import com.hypixel.hytale.assetstore.AssetExtraInfo;
+import com.hypixel.hytale.assetstore.AssetKeyValidator;
 import com.hypixel.hytale.assetstore.AssetRegistry;
 import com.hypixel.hytale.assetstore.AssetStore;
 import com.hypixel.hytale.assetstore.codec.AssetBuilderCodec;
@@ -10,6 +11,7 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.codec.schema.metadata.ui.UIEditor;
 import com.hypixel.hytale.codec.schema.metadata.ui.UIRebuildCaches;
+import com.hypixel.hytale.codec.validation.ValidatorCache;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import de.bsdlr.rooms.config.PluginConfig;
 import de.bsdlr.rooms.services.set.block.FurnitureSetBlockType;
@@ -50,6 +52,7 @@ public class FurnitureSetType implements JsonAssetWithMap<String, FurnitureSetTy
             .documentation("test documentation")
             .add()
             .build();
+    public static final ValidatorCache<String> VALIDATOR_CACHE = new ValidatorCache<>(new AssetKeyValidator<>(FurnitureSetType::getAssetStore));
     private static AssetStore<String, FurnitureSetType, FurnitureSetTypeAssetMap<String, FurnitureSetType>> ASSET_STORE;
     public static final String UNKNOWN_KEY = "Unknown";
     public static final FurnitureSetType UNKNOWN = new FurnitureSetType(UNKNOWN_KEY) {

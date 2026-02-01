@@ -23,13 +23,12 @@ public class RoomTranslationProperties {
             .build();
     @Nullable
     private String name;
-    @Nullable
     private String description;
 
     RoomTranslationProperties() {
     }
 
-    public RoomTranslationProperties(@Nonnull String name, @Nonnull String description) {
+    public RoomTranslationProperties(@Nonnull String name, String description) {
         this.name = name;
         this.description = description;
     }

@@ -1,2 +1,9 @@
 rooms.rooms.Test.name=Test Name
 rooms.rooms.Test.description=Test Description
+rooms.qualities.Common=Common
+rooms.qualities.Debug=Debug
+rooms.qualities.Developer=Developer
+rooms.qualities.Epic=Epic
+rooms.qualities.Legendary=Legendary
+rooms.qualities.Rare=Rare
+rooms.qualities.Uncommon=Uncommon

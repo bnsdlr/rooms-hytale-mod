@@ -1,0 +1,10 @@
+{
+  "RoomBlocks": [
+    {
+      "BlockId": "Furniture_Crude_Bed",
+      "MinCount": 2
+    },
+    {}
+  ],
+  "AdditionalScore": 10
+}
