@@ -1,5 +1,6 @@
 rooms.rooms.Test.name=Test Name
 rooms.rooms.Test.description=Test Description
+rooms.rooms.Simple_Bed_Room.name=Simple Bed Room
 rooms.qualities.Common=Common
 rooms.qualities.Debug=Debug
 rooms.qualities.Developer=Developer

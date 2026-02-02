@@ -2,9 +2,9 @@
 
 ## ToDo
 
-- [ ] half a block precision for detecting current room (x and z)
+- [ ] half a block precision for detecting current builder (x and z)
 - [ ] rooms
-    - [ ] more complex room definitions
+    - [ ] more complex builder definitions
       - [ ] block that matches regex
       - [ ] blocks of group
     - [ ] rarity
@@ -18,3 +18,4 @@
     - [ ] any rotation (of the set)
     - [ ] add required rotation (relative)
 - [ ] if multiple rooms match, give ability to choose from them.
+- [ ] separate each worlds rooms

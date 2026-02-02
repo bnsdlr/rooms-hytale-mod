@@ -20,14 +20,14 @@ public class PluginConfig {
             .add()
             .build();
     public static final CommonAssetValidator ICON_VALIDATOR = new CommonAssetValidator("png", "Icons/Rooms", "Icons/ItemCategories");
-    private Vector3i scanRadius = new Vector3i(100, 50, 100);
+    private Vector3i scanRadius = new Vector3i(3, 3, 3);
     private RoomsConfig roomsConfig = new RoomsConfig();
 
     public void validate() {
         roomsConfig.validate();
-        if (scanRadius.x < 0) scanRadius.setX(1);
-        if (scanRadius.y < 0) scanRadius.setY(1);
-        if (scanRadius.z < 0) scanRadius.setZ(1);
+        if (scanRadius.x <= 0) scanRadius.setX(1);
+        if (scanRadius.y <= 0) scanRadius.setY(1);
+        if (scanRadius.z <= 0) scanRadius.setZ(1);
     }
 
     public Vector3i getScanRadius() {
@@ -63,5 +63,13 @@ public class PluginConfig {
 
     public void setMaxRoomHeight(int maxRoomHeight) {
         this.roomsConfig.setMaxRoomHeight(maxRoomHeight);
+    }
+
+    public Vector3i getBoundScanRadius() {
+        return this.roomsConfig.getBoundScanRadius();
+    }
+
+    public void setBoundScanRadius(Vector3i boundScanRadius) {
+        this.roomsConfig.setBoundScanRadius(boundScanRadius);
     }
 }

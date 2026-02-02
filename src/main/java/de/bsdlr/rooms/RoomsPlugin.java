@@ -2,29 +2,32 @@ package de.bsdlr.rooms;
 
 import com.hypixel.hytale.assetstore.map.IndexedLookupTableAssetMap;
 import com.hypixel.hytale.component.ComponentRegistryProxy;
-import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.event.EventPriority;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.protocol.packets.setup.WorldLoadFinished;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.asset.HytaleAssetStore;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSystem;
+import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.Universe;
-import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.events.AllWorldsLoadedEvent;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.Config;
 import de.bsdlr.rooms.commands.*;
 import de.bsdlr.rooms.config.PluginConfig;
-import de.bsdlr.rooms.services.quality.Quality;
-import de.bsdlr.rooms.services.room.RoomManager;
-import de.bsdlr.rooms.services.room.RoomType;
-import de.bsdlr.rooms.services.room.RoomTypeAssetMap;
-import de.bsdlr.rooms.services.set.FurnitureSetType;
-import de.bsdlr.rooms.services.set.FurnitureSetTypeAssetMap;
-import de.bsdlr.rooms.storage.PlayerStorageManager;
+import de.bsdlr.rooms.lib.quality.Quality;
+import de.bsdlr.rooms.lib.room.RoomDetector;
+import de.bsdlr.rooms.lib.room.RoomManager;
+import de.bsdlr.rooms.lib.room.RoomType;
+import de.bsdlr.rooms.lib.room.RoomTypeAssetMap;
+import de.bsdlr.rooms.lib.set.FurnitureSetType;
+import de.bsdlr.rooms.lib.set.FurnitureSetTypeAssetMap;
+import de.bsdlr.rooms.lib.storage.Data;
+import de.bsdlr.rooms.lib.systems.BreakBlockEventSystem;
 import de.bsdlr.rooms.ui.HudComponent;
 import de.bsdlr.rooms.ui.HudManager;
 
@@ -36,8 +39,7 @@ public class RoomsPlugin extends JavaPlugin {
     private static RoomsPlugin instance;
 
     private final Config<PluginConfig> config;
-    private final RoomManager roomManager;
-    private final PlayerStorageManager playerStorageManager;
+    private final Data<RoomManager> roomManager;
 
     public static RoomsPlugin get() {
         return instance;
@@ -46,8 +48,7 @@ public class RoomsPlugin extends JavaPlugin {
     public RoomsPlugin(JavaPluginInit init) {
         super(init);
         config = this.withConfig("config", PluginConfig.CODEC);
-        roomManager = new RoomManager();
-        playerStorageManager = new PlayerStorageManager();
+        roomManager = new Data<>(this.getDataDirectory(), "rooms", RoomManager.CODEC);
     }
 
     @Override
@@ -56,15 +57,35 @@ public class RoomsPlugin extends JavaPlugin {
         LOGGER.atInfo().log("             Setting up RoomsPlugin!");
         LOGGER.atInfo().log("=========================================================");
 
+//        Vector3d p1 = new Vector3d(123.123, 100.5, 193.6);
+//        long key = PositionUtils.encodePosition(p1);
+//        Vector3d r1 = new Vector3d(PositionUtils.decodeX(key), PositionUtils.decodeY(key), PositionUtils.decodeZ(key));
+//        LOGGER.atInfo().log("input : %.1f %.1f %.1f", p1.x, p1.y, p1.z);
+//        LOGGER.atInfo().log("output: %.1f %.1f %.1f", r1.x, r1.y, r1.z);
+//
+//        Vector3d p2 = new Vector3d(-123.123, 100.5, -193.6);
+//        long key2 = PositionUtils.encodePosition(p2);
+//        Vector3d r2 = new Vector3d(PositionUtils.decodeX(key2), PositionUtils.decodeY(key2), PositionUtils.decodeZ(key2));
+//        LOGGER.atInfo().log("input : %.1f %.1f %.1f", p2.x, p2.y, p2.z);
+//        LOGGER.atInfo().log("output: %.1f %.1f %.1f", r2.x, r2.y, r2.z);
+
         instance = this;
         config.get().validate();
         config.save();
 
+        roomManager.load();
+        roomManager.get();
+        roomManager.save();
+
         this.getCommandRegistry().registerCommand(new RoomsCommand());
+        this.getCommandRegistry().registerCommand(new DetectCommand());
+        this.getCommandRegistry().registerCommand(new RoomsConfigCommand());
         this.getCommandRegistry().registerCommand(new BlockInfoCommand());
         this.getCommandRegistry().registerCommand(new RotateCommand());
         this.getCommandRegistry().registerCommand(new TestUICommand());
         this.getCommandRegistry().registerCommand(new SetCommand());
+
+        this.getEntityStoreRegistry().registerSystem(new BreakBlockEventSystem());
 
         ComponentRegistryProxy<EntityStore> entityStoreRegistry = this.getEntityStoreRegistry();
         HudComponent.setComponentType(entityStoreRegistry.registerComponent(HudComponent.class, "Rooms_Hud", HudComponent.CODEC));
@@ -95,7 +116,7 @@ public class RoomsPlugin extends JavaPlugin {
 //                }
 //        );
 
-        // Room Type Asset Store
+        // Builder Type Asset Store
         RoomTypeAssetMap<String, RoomType> roomTypeAssetMap = new RoomTypeAssetMap<>(RoomType[]::new, RoomType::getGroup);
         HytaleAssetStore.Builder<String, RoomType, RoomTypeAssetMap<String, RoomType>> roomTypeAssetStoreBuilder = HytaleAssetStore.builder(RoomType.class, roomTypeAssetMap);
         roomTypeAssetStoreBuilder.setPath("Rooms/Rooms");
@@ -140,8 +161,8 @@ public class RoomsPlugin extends JavaPlugin {
     @Override
     protected void shutdown() {
         LOGGER.atInfo().log("Shutting down RoomsPlugin!");
-
         config.save();
+        roomManager.save();
     }
 
     public Config<PluginConfig> getConfig() {
@@ -149,6 +170,6 @@ public class RoomsPlugin extends JavaPlugin {
     }
 
     public RoomManager getRoomManager() {
-        return roomManager;
+        return roomManager.get();
     }
 }

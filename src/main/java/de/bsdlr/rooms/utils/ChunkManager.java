@@ -5,12 +5,10 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
-import de.bsdlr.rooms.services.room.block.RoomBlock;
-import de.bsdlr.rooms.services.set.block.FurnitureSetBlock;
+import de.bsdlr.rooms.lib.room.block.RoomBlock;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 public class ChunkManager {
     private final Map<Long, WorldChunk> chunkMap;
@@ -49,20 +47,24 @@ public class ChunkManager {
         return chunk.getBlock(x, y, z);
     }
 
+    public BlockType getBlockTypeAt(Vector3i vec) {
+        return getBlockTypeAt(vec.x, vec.y, vec.z);
+    }
+
     public BlockType getBlockTypeAt(int x, int y, int z) {
         int blockId = this.getBlockIdAt(x, y, z);
         return BlockType.getAssetMap().getAsset(blockId);
     }
 
-    public RoomBlock.BlockBuilder getRoomBlockBuilderAt(int x, int y, int z) {
+    public RoomBlock.Builder getRoomBlockBuilderAt(int x, int y, int z) {
         return getRoomBlockBuilderAt(new Vector3i(x, y, z));
     }
 
-    public RoomBlock.BlockBuilder getRoomBlockBuilderAt(Vector3i vec) {
+    public RoomBlock.Builder getRoomBlockBuilderAt(Vector3i vec) {
         WorldChunk chunk = this.getChunkFromBlock(vec.x, vec.z);
         int blockId = chunk.getBlock(vec.x, vec.y, vec.z);
 
-        return new RoomBlock.BlockBuilder(blockId, vec);
+        return new RoomBlock.Builder(blockId, vec);
     }
 
     public static WorldChunk loadChunk(World world, long index) {

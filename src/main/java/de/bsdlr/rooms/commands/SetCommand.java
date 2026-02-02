@@ -12,8 +12,8 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import de.bsdlr.rooms.RoomsPlugin;
-import de.bsdlr.rooms.services.set.FurnitureSet;
-import de.bsdlr.rooms.services.set.FurnitureSetDetector;
+import de.bsdlr.rooms.lib.set.FurnitureSet;
+import de.bsdlr.rooms.lib.set.FurnitureSetDetector;
 
 import javax.annotation.Nonnull;
 import java.util.Set;

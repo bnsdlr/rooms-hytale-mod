@@ -5,25 +5,25 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import de.bsdlr.rooms.services.room.RoomEntity;
+import de.bsdlr.rooms.lib.room.Room;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class HudComponent implements Component<EntityStore> {
     public static final BuilderCodec<HudComponent> CODEC = BuilderCodec.builder(HudComponent.class, HudComponent::new)
-            .append(new KeyedCodec<>("Room", RoomEntity.CODEC),
-                    (hud, s) -> hud.roomEntity = s,
-                    hud -> hud.roomEntity)
+            .append(new KeyedCodec<>("Room", Room.CODEC),
+                    (hud, s) -> hud.room = s,
+                    hud -> hud.room)
             .add()
             .build();
     public static ComponentType<EntityStore, HudComponent> TYPE;
-    private RoomEntity roomEntity = null;
+    private Room room = null;
 
     public HudComponent() {}
 
     public HudComponent(@Nonnull HudComponent other) {
-        this.roomEntity = other.roomEntity;
+        this.room = other.room;
     }
 
     public static void setComponentType(ComponentType<EntityStore, HudComponent> type) {
@@ -40,11 +40,11 @@ public class HudComponent implements Component<EntityStore> {
         return new HudComponent(this);
     }
 
-    public RoomEntity getRoomEntity() {
-        return roomEntity;
+    public Room getRoomEntity() {
+        return room;
     }
 
-    public void setRoomEntity(RoomEntity roomEntity) {
-        this.roomEntity = roomEntity;
+    public void setRoomEntity(Room room) {
+        this.room = room;
     }
 }

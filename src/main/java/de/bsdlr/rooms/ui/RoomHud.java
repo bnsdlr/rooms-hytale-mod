@@ -5,8 +5,9 @@ import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import de.bsdlr.rooms.services.room.RoomEntity;
-import de.bsdlr.rooms.services.room.RoomType;
+import de.bsdlr.rooms.lib.room.Room;
+import de.bsdlr.rooms.lib.room.RoomTranslationProperties;
+import de.bsdlr.rooms.lib.room.RoomType;
 
 import javax.annotation.Nonnull;
 
@@ -25,17 +26,23 @@ public class RoomHud extends CustomUIHud {
         ui.append("Pages/RoomHud.ui");
     }
 
-    public void update(@Nonnull RoomEntity room) {
+    public void update(@Nonnull Room room) {
         RoomType type = room.getType();
-        String name = type.getTranslationProperties().getName() == null
-                ? room.getId()
-                : type.getTranslationProperties().getName();
+        RoomTranslationProperties translationProperties = type.getTranslationProperties();
+
+        String name = translationProperties != null && translationProperties.getName() != null
+                ? translationProperties.getName()
+                : type.getId().replace('_', ' ');
+
+        String description = translationProperties != null && translationProperties.getDescription() != null
+                ? translationProperties.getDescription() : null;
+
         LOGGER.atInfo().log("name: %s", name);
         LOGGER.atInfo().log("score: %d", room.getScore());
-        LOGGER.atInfo().log("description: %s", type.getTranslationProperties().getDescription());
+        LOGGER.atInfo().log("description: %s", description);
         updateName(Message.raw(name).color(type.getColorOrFallback().toString()));
         updateScore(room.getScore());
-        updateDescription(type.getTranslationProperties().getDescription());
+        updateDescription(description);
     }
 
     private void update(String id, Message message) {

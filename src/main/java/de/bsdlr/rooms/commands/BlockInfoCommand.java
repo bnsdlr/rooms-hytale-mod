@@ -13,10 +13,10 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.TargetUtil;
-import de.bsdlr.rooms.services.room.block.RoomBlockRole;
-import de.bsdlr.rooms.services.set.FurnitureSet;
-import de.bsdlr.rooms.services.set.FurnitureSetDetector;
-import de.bsdlr.rooms.services.set.FurnitureSetType;
+import de.bsdlr.rooms.lib.room.block.RoomBlockRole;
+import de.bsdlr.rooms.lib.set.FurnitureSet;
+import de.bsdlr.rooms.lib.set.FurnitureSetDetector;
+import de.bsdlr.rooms.lib.set.FurnitureSetType;
 import de.bsdlr.rooms.utils.ChunkManager;
 
 import javax.annotation.Nonnull;

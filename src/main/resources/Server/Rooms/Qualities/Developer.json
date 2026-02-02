@@ -1,5 +1,5 @@
 {
   "QualityValue": 10,
-  "TextColor": "#bb2f2c",
+  "Color": "#bb2f2c",
   "LocalizationKey": "server.rooms.qualities.Developer"
 }
