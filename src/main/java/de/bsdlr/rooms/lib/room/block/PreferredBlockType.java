@@ -9,6 +9,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import de.bsdlr.rooms.lib.asset.regex.Regex;
 import de.bsdlr.rooms.lib.asset.regex.RegexValidator;
+import de.bsdlr.rooms.lib.asset.score.Score;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -16,48 +17,39 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class RoomBlockType {
+public class PreferredBlockType {
     protected static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-    public static final BuilderCodec<RoomBlockType> CODEC = BuilderCodec.builder(RoomBlockType.class, RoomBlockType::new)
+    public static final BuilderCodec<PreferredBlockType> CODEC = BuilderCodec.builder(PreferredBlockType.class, PreferredBlockType::new)
             .appendInherited(new KeyedCodec<>("BlockIdPattern", Regex.CODEC),
-                    ((roomBlockType, s) -> roomBlockType.blockIdPattern = s),
-                    (roomBlockType -> roomBlockType.blockIdPattern),
-                    ((roomBlockType, parent) -> roomBlockType.blockIdPattern = parent.blockIdPattern)
+                    ((preferredBlockType, s) -> preferredBlockType.blockIdPattern = s),
+                    (preferredBlockType -> preferredBlockType.blockIdPattern),
+                    ((preferredBlockType, parent) -> preferredBlockType.blockIdPattern = parent.blockIdPattern)
             )
             .addValidator(Validators.nonNull())
             .addValidator(new RegexValidator(BlockType.getAssetMap().getAssetMap().keySet()))
             .add()
-            .appendInherited(new KeyedCodec<>("MinCount", Codec.INTEGER),
-                    ((roomBlockType, s) -> roomBlockType.minCount = s),
-                    (roomBlockType -> roomBlockType.minCount),
-                    ((roomBlockType, parent) -> roomBlockType.minCount = parent.minCount)
-            )
-            .addValidator(Validators.min(1))
-            .add()
-            .appendInherited(new KeyedCodec<>("MaxCount", Codec.INTEGER),
-                    ((roomBlockType, s) -> roomBlockType.maxCount = s),
-                    (roomBlockType -> roomBlockType.maxCount),
-                    ((roomBlockType, parent) -> roomBlockType.maxCount = parent.maxCount)
+            .appendInherited(new KeyedCodec<>("Score", Score.CODEC),
+                    ((preferredBlockType, s) -> preferredBlockType.score = s),
+                    (preferredBlockType -> preferredBlockType.score),
+                    ((preferredBlockType, parent) -> preferredBlockType.score = parent.score)
             )
             .add()
-            .afterDecode(RoomBlockType::addMatchingBlockIds)
+            .afterDecode(PreferredBlockType::addMatchingBlockIds)
             .build();
-    public static final ValidatorCache<RoomBlockType> VALIDATOR_CACHE = new ValidatorCache<>(new RoomBlockTypeValidator());
     @Nonnull
-    protected Regex blockIdPattern = new Regex("", null);
-    protected int minCount = 1;
-    protected int maxCount = Integer.MAX_VALUE;
+    protected Regex blockIdPattern = new Regex(".*", null);
+    @Nonnull
+    protected Score score = new Score();
 
     private String[] blockIds;
 
-    public RoomBlockType() {
+    public PreferredBlockType() {
     }
 
-    public RoomBlockType(@Nonnull RoomBlockType other) {
+    public PreferredBlockType(@Nonnull PreferredBlockType other) {
         this.blockIdPattern = other.blockIdPattern;
-        this.minCount = other.minCount;
-        this.maxCount = other.maxCount;
-        addMatchingBlockIds(this);
+        this.score = other.score;
+        this.blockIds = other.blockIds;
     }
 
     @Nonnull
@@ -75,10 +67,10 @@ public class RoomBlockType {
         return matchingBlockIds;
     }
 
-    public static void addMatchingBlockIds(RoomBlockType roomBlockType) {
+    public static void addMatchingBlockIds(PreferredBlockType preferredBlockType) {
         try {
-            roomBlockType.blockIds =
-                    RoomBlockType.getMatchingBlockIds(roomBlockType.getBlockIdPattern()).toArray(new String[0]);
+            preferredBlockType.blockIds =
+                    PreferredBlockType.getMatchingBlockIds(preferredBlockType.getBlockIdPattern()).toArray(new String[0]);
         } catch (Exception e) {
             LOGGER.atSevere().withCause(e).log("Could not find matching block ids.");
             throw e;
@@ -86,6 +78,9 @@ public class RoomBlockType {
     }
 
     public String[] getMatchingBlockIds() {
+        if (this.blockIds == null) {
+            addMatchingBlockIds(this);
+        }
         return this.blockIds;
     }
 
@@ -94,11 +89,8 @@ public class RoomBlockType {
         return blockIdPattern;
     }
 
-    public int getMinCount() {
-        return minCount;
-    }
-
-    public int getMaxCount() {
-        return maxCount;
+    @Nonnull
+    public Score getScore() {
+        return score;
     }
 }

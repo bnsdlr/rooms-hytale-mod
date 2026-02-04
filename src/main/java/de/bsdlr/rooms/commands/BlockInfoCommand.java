@@ -20,6 +20,7 @@ import de.bsdlr.rooms.lib.set.FurnitureSetType;
 import de.bsdlr.rooms.utils.ChunkManager;
 
 import javax.annotation.Nonnull;
+import java.util.Arrays;
 
 public class BlockInfoCommand extends AbstractPlayerCommand {
 
@@ -65,10 +66,12 @@ public class BlockInfoCommand extends AbstractPlayerCommand {
         ctx.sendMessage(Message.raw("opacity: " + type.getOpacity()));
         ctx.sendMessage(Message.raw("draw type: " + type.getDrawType()));
         ctx.sendMessage(Message.raw("custom model: " + type.getCustomModel()));
+        ctx.sendMessage(Message.raw("textures: " + Arrays.toString(type.getTextures())));
         ctx.sendMessage(Message.raw("is solid block: " + RoomBlockRole.isSolidBlock(type)));
         ctx.sendMessage(Message.raw("is furniture: " + RoomBlockRole.isFurniture(type)));
         ctx.sendMessage(Message.raw("is entrance: " + RoomBlockRole.isEntrance(type)));
         ctx.sendMessage(Message.raw("is window: " + RoomBlockRole.isWindow(type)));
+        ctx.sendMessage(Message.raw("is room wall block: " + RoomBlockRole.isRoomWallBlock(type)));
         ctx.sendMessage(Message.raw("is room wall: " + RoomBlockRole.isRoomWall(type)));
         ctx.sendMessage(Message.raw("block role: " + RoomBlockRole.getRole(blockId, type)));
 

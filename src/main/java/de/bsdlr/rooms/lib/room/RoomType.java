@@ -10,18 +10,20 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.codec.schema.metadata.ui.UIEditor;
 import com.hypixel.hytale.codec.schema.metadata.ui.UIRebuildCaches;
+import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.protocol.Color;
 import de.bsdlr.rooms.config.PluginConfig;
-import de.bsdlr.rooms.lib.quality.Quality;
+import de.bsdlr.rooms.lib.asset.AssetMapWithGroup;
+import de.bsdlr.rooms.lib.asset.quality.Quality;
+import de.bsdlr.rooms.lib.asset.score.Score;
+import de.bsdlr.rooms.lib.room.block.PreferredBlockType;
 import de.bsdlr.rooms.lib.room.block.RoomBlockType;
 import de.bsdlr.rooms.lib.set.FurnitureSetType;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class RoomType implements JsonAssetWithMap<String, RoomTypeAssetMap<String, RoomType>>
-//        , NetworkSerializable<de.rooms.protocol.RoomType>
-{
+public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<String, RoomType>> {
     public static final AssetBuilderCodec<String, RoomType> CODEC = AssetBuilderCodec.builder(
                     RoomType.class, RoomType::new, Codec.STRING, (t, k) -> t.id = k, t -> t.id, (asset, data) -> asset.data = data, asset -> asset.data
             )
@@ -38,6 +40,21 @@ public class RoomType implements JsonAssetWithMap<String, RoomTypeAssetMap<Strin
                     ((roomType, parent) -> roomType.roomBlocks = parent.roomBlocks)
             )
             .documentation("Required Blocks in the room.")
+            .addValidator(RoomBlockType.VALIDATOR_CACHE.getArrayValidator())
+            .add()
+            .appendInherited(new KeyedCodec<>("PreferredWallBlocks", new ArrayCodec<>(PreferredBlockType.CODEC, PreferredBlockType[]::new)),
+                    ((roomType, s) -> roomType.preferredWallBlocks = s),
+                    (roomType -> roomType.preferredWallBlocks),
+                    ((roomType, parent) -> roomType.preferredWallBlocks = parent.preferredWallBlocks)
+            )
+            .documentation("Preferred wall blocks.")
+            .add()
+            .appendInherited(new KeyedCodec<>("PreferredFloorBlocks", new ArrayCodec<>(PreferredBlockType.CODEC, PreferredBlockType[]::new)),
+                    ((roomType, s) -> roomType.preferredFloorBlocks = s),
+                    (roomType -> roomType.preferredFloorBlocks),
+                    ((roomType, parent) -> roomType.preferredFloorBlocks = parent.preferredFloorBlocks)
+            )
+            .documentation("Preferred floor blocks.")
             .add()
             .appendInherited(new KeyedCodec<>("Sets", new ArrayCodec<>(Codec.STRING, String[]::new)),
                     ((roomType, s) -> roomType.setIds = s),
@@ -72,14 +89,19 @@ public class RoomType implements JsonAssetWithMap<String, RoomTypeAssetMap<Strin
             .addValidator(Quality.VALIDATOR_CACHE.getValidator())
             .documentation("Ignore the error... don't know how to prevent it...")
             .add()
-            .appendInherited(new KeyedCodec<>("AdditionalScore", Codec.INTEGER),
-                    (roomType, s) -> roomType.additionalScore = s,
-                    roomType -> roomType.additionalScore,
-                    (roomType, parent) -> roomType.additionalScore = parent.additionalScore)
+            .appendInherited(new KeyedCodec<>("Score", Score.CODEC),
+                    (roomType, s) -> roomType.score = s,
+                    roomType -> roomType.score,
+                    (roomType, parent) -> roomType.score = parent.score)
+            .add()
+            .appendInherited(new KeyedCodec<>("MinArea", Codec.INTEGER),
+                    (roomType, s) -> roomType.minArea = s,
+                    roomType -> roomType.minArea,
+                    (roomType, parent) -> roomType.minArea = parent.minArea)
+            .addValidator(Validators.min(1))
             .add()
             .build();
     public static final String DEFAULT_KEY = "Room";
-    public static final RoomTranslationProperties DEFAULT_TRANSLATION_PROPERTIES = new RoomTranslationProperties("Room", null);
     public static final RoomType DEFAULT = new RoomType(DEFAULT_KEY);
     public static final String UNKNOWN_KEY = "Unknown";
     public static final RoomType UNKNOWN = new RoomType(UNKNOWN_KEY) {
@@ -87,29 +109,28 @@ public class RoomType implements JsonAssetWithMap<String, RoomTypeAssetMap<Strin
             this.unknown = true;
         }
     };
-    private static AssetStore<String, RoomType, RoomTypeAssetMap<String, RoomType>> ASSET_STORE;
+    private static AssetStore<String, RoomType, AssetMapWithGroup<String, RoomType>> ASSET_STORE;
     protected String id;
     protected int priority;
     protected boolean unknown = false;
     protected AssetExtraInfo.Data data;
     protected RoomTranslationProperties translationProperties;
     protected RoomBlockType[] roomBlocks = new RoomBlockType[0];
+    protected PreferredBlockType[] preferredWallBlocks = new PreferredBlockType[0];
+    protected PreferredBlockType[] preferredFloorBlocks = new PreferredBlockType[0];
     protected String icon = "Icons/ItemCategories/Build-Roofs.png";
     protected String[] setIds;
     protected String group;
     protected String qualityId = Quality.DEFAULT_ID;
-    protected int additionalScore;
-//    protected int minArea = 1;
-    // TODO:
-    // min/max room height (from floor);
-    // min/max room area
+    protected Score score;
+    protected int minArea = 1;
 
     @Nullable
     public static RoomType fromString(@Nonnull String input) {
         return getAssetMap().getAsset(input);
     }
 
-    public static AssetStore<String, RoomType, RoomTypeAssetMap<String, RoomType>> getAssetStore() {
+    public static AssetStore<String, RoomType, AssetMapWithGroup<String, RoomType>> getAssetStore() {
         if (ASSET_STORE == null) {
             ASSET_STORE = AssetRegistry.getAssetStore(RoomType.class);
         }
@@ -117,8 +138,8 @@ public class RoomType implements JsonAssetWithMap<String, RoomTypeAssetMap<Strin
         return ASSET_STORE;
     }
 
-    public static RoomTypeAssetMap<String, RoomType> getAssetMap() {
-        return (RoomTypeAssetMap<String, RoomType>) getAssetStore().getAssetMap();
+    public static AssetMapWithGroup<String, RoomType> getAssetMap() {
+        return (AssetMapWithGroup<String, RoomType>) getAssetStore().getAssetMap();
     }
 
     public RoomType() {
@@ -135,11 +156,14 @@ public class RoomType implements JsonAssetWithMap<String, RoomTypeAssetMap<Strin
         this.translationProperties = other.translationProperties;
         this.data = other.data;
         this.roomBlocks = other.roomBlocks;
+        this.preferredWallBlocks = other.preferredWallBlocks;
+        this.preferredFloorBlocks = other.preferredFloorBlocks;
         this.setIds = other.setIds;
         this.icon = other.icon;
         this.group = other.group;
         this.qualityId = other.qualityId;
-        this.additionalScore = other.additionalScore;
+        this.score = other.score;
+        this.minArea = other.minArea;
     }
 
     @Override
@@ -183,12 +207,24 @@ public class RoomType implements JsonAssetWithMap<String, RoomTypeAssetMap<Strin
         return qualityId;
     }
 
-    public int getAdditionalScore() {
-        return additionalScore;
+    public PreferredBlockType[] getPreferredWallBlocks() {
+        return preferredWallBlocks;
+    }
+
+    public PreferredBlockType[] getPreferredFloorBlocks() {
+        return preferredFloorBlocks;
+    }
+
+    public Score getScore() {
+        return score;
     }
 
     public Quality getQuality() {
         return Quality.getAssetMap().getAsset(qualityId);
+    }
+
+    public int getMinArea() {
+        return minArea;
     }
 
     public Quality getQualityOrDefault(Quality defaultVal) {
@@ -229,7 +265,11 @@ public class RoomType implements JsonAssetWithMap<String, RoomTypeAssetMap<Strin
         if (q1.getQualityValue() > q2.getQualityValue()) return o1;
         if (o1.roomBlocks.length < o2.roomBlocks.length) return o2;
         if (o1.roomBlocks.length > o2.roomBlocks.length) return o1;
-        if (o1.additionalScore < o2.additionalScore) return o2;
+        if (o1.score.getMultiplier() < o2.score.getMultiplier()) return o2;
+        if (o1.score.getMultiplier() > o2.score.getMultiplier()) return o1;
+        if (o1.score.getAddBefore() < o2.score.getAddBefore()) return o2;
+        if (o1.score.getAddBefore() > o2.score.getAddBefore()) return o1;
+        if (o1.score.getAddAfter() < o2.score.getAddAfter()) return o2;
         return o1;
     }
 }

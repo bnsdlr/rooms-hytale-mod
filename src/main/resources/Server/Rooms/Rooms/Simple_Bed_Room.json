@@ -2,9 +2,20 @@
   "RoomBlocks": [
     {
       "BlockId": "Furniture_Crude_Bed",
-      "MinCount": 2
+      "MinCount": 2,
+      "BlockIdPattern": {
+        "Pattern": ".*Bed.*"
+      }
     },
-    {}
+    {
+      "BlockIdPattern": {
+        "Pattern": ".*Torch*."
+      }
+    }
   ],
-  "AdditionalScore": 10
+  "AdditionalScore": 10,
+  "Quality": "Common",
+  "PreferredWallBlocks": [
+    {}
+  ]
 }

@@ -4,7 +4,7 @@ Group {
     LayoutMode: Top;
 //    ClipChildren: true;
     Background: (Color: #0b111c(0.96));
-    Anchor: (Width: 400, Height: 200, Left: 0, Top: 0);
+    Anchor: (Width: 400, Height: 200, Left: 25, Top: 60);
     Padding: (Full: 10);
 
     AssetImage #Icon {

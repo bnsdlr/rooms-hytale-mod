@@ -1,6 +1,6 @@
 // code copied from: com.hypixel.hytale.assetstore.map.BlockTypeAssetMap
 // and then modified a bit...
-package de.bsdlr.rooms.lib.set;
+package de.bsdlr.rooms.lib.asset;
 
 
 import com.hypixel.hytale.assetstore.codec.AssetCodec;
@@ -21,7 +21,7 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
-public class FurnitureSetTypeAssetMap<K, T extends JsonAssetWithMap<K, FurnitureSetTypeAssetMap<K, T>>> extends AssetMapWithIndexes<K, T> {
+public class AssetMapWithGroup<K, T extends JsonAssetWithMap<K, AssetMapWithGroup<K, T>>> extends AssetMapWithIndexes<K, T> {
     private final AtomicInteger nextIndex = new AtomicInteger();
     private final StampedLock keyToIndexLock = new StampedLock();
     private final Object2IntMap<K> keyToIndex = new Object2IntOpenCustomHashMap<>(CaseInsensitiveHashStrategy.getInstance());
@@ -35,7 +35,7 @@ public class FurnitureSetTypeAssetMap<K, T extends JsonAssetWithMap<K, Furniture
     @Deprecated
     private final Object2IntMap<String> groupMap = new Object2IntOpenHashMap<>();
 
-    public FurnitureSetTypeAssetMap(@Nonnull IntFunction<T[]> arrayProvider, Function<T, String> groupGetter) {
+    public AssetMapWithGroup(@Nonnull IntFunction<T[]> arrayProvider, Function<T, String> groupGetter) {
         this.arrayProvider = arrayProvider;
         this.groupGetter = groupGetter;
         this.array = (T[])((JsonAssetWithMap[])arrayProvider.apply(0));

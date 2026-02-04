@@ -7,6 +7,16 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 public class PositionUtils {
+    public static void forOffsetInRadius(Vector3i radius, TriFunction<Integer, Integer, Integer, Void> f) {
+        for (int dx = -radius.x + 1; dx < radius.x; dx++) {
+            for (int dy = -radius.y + 1; dy < radius.y; dy++) {
+                for (int dz = -radius.z + 1; dz < radius.z; dz++) {
+                    f.accept(dx, dy, dz);
+                }
+            }
+        }
+    }
+
     public static <R, C extends Collection<R>> C forOffsetInRadius(Vector3i radius, TriFunction<Integer, Integer, Integer, R> f, Supplier<C> supplier) {
         C results = supplier.get();
 

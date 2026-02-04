@@ -3,9 +3,7 @@ package de.bsdlr.rooms.lib.room;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
@@ -26,6 +24,20 @@ import java.util.concurrent.ExecutionException;
 
 public class RoomDetector {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+    private static boolean silent = false;
+    private static Boolean last;
+
+    public static void setSilent(boolean s) {
+        if (last == null) {
+            last = silent;
+        }
+        silent = s;
+    }
+
+    public static void restoreSilent() {
+        silent = last;
+        last = null;
+    }
 
     public static Room validate(Room room, Vector3i pos, long key) throws RoomValidationException, WorldChunkNullException, ExecutionException, InterruptedException {
         World world = Universe.get().getWorld(room.getWorldUuid());
@@ -41,7 +53,7 @@ public class RoomDetector {
                     Room r = getRoomAt(world, pos.x, pos.y, pos.z);
                     future.complete(r);
                 } catch (FailedToDetectRoomException e) {
-                    LOGGER.atSevere().withCause(e).log("Failed to validate room: %s", e.getMessage());
+                    LOGGER.atWarning().withCause(e).log("Failed to validate room: %s", e.getMessage());
                     future.complete(null);
                 }
             });
@@ -85,9 +97,13 @@ public class RoomDetector {
         }, HashSet::new);
     }
 
-    public static Room getRoomAt(World world, int posX, int posY, int posZ) throws FailedToDetectRoomException, WorldChunkNullException {
-        if (posY > 320) return null;
-//        LOGGER.atWarning().log("get room at: %d %d %d", posX, posY, posZ);
+    public static Room getRoomAt(World world, int x, int y, int z) throws FailedToDetectRoomException, WorldChunkNullException {
+        return getRoomAt(world, x, y, z, null);
+    }
+
+    public static Room getRoomAt(World world, int x, int y, int z, Map<Long, BlockType> overrideBlocks) throws FailedToDetectRoomException, WorldChunkNullException {
+        if (y > 320) return null;
+//        LOGGER.atWarning().log("get room at: %d %d %d", x, y, z);
 
         ChunkManager chunkManager = new ChunkManager(world);
 
@@ -96,14 +112,14 @@ public class RoomDetector {
 //        LOGGER.atInfo().log("min wall height: " + config.getRoomsConfig().getMinRoomHeight());
 //        LOGGER.atInfo().log("max room height: " + config.getRoomsConfig().getMaxRoomHeight());
 
-        int floorY = detectFloor(chunkManager, config.getBoundScanRadius(), posX, posY, posZ);
+        int floorY = detectFloor(chunkManager, config.getBoundScanRadius(), x, y, z, overrideBlocks);
 //        LOGGER.atInfo().log("floor: " + floorY);
-        if (posY - floorY > config.getRoomsConfig().getMaxRoomHeight()) return null;
+        if (y - floorY > config.getRoomsConfig().getMaxRoomHeight()) return null;
 
-        return flood(chunkManager, config, posX, posY, posZ);
+        return flood(chunkManager, config, x, y, z, overrideBlocks);
     }
 
-    private static Room flood(ChunkManager chunkManager, PluginConfig config, int x, int y, int z) throws FailedToDetectRoomException, WorldChunkNullException {
+    private static Room flood(ChunkManager chunkManager, PluginConfig config, int x, int y, int z, Map<Long, BlockType> overrideBlocks) throws FailedToDetectRoomException, WorldChunkNullException {
 //        LOGGER.atInfo().log("Start flood (%d %d %d).", x, y, z);
         Set<Vector3i> visited = new HashSet<>();
         Room.Builder builder = new Room.Builder();
@@ -112,7 +128,7 @@ public class RoomDetector {
 
         Vector3i boundScanRadius = config.getBoundScanRadius();
 
-        if (!isInRoom(chunkManager, boundScanRadius, x, y, z))
+        if (!isInRoom(chunkManager, boundScanRadius, x, y, z, overrideBlocks))
             throw new FailedToDetectRoomException("Could not detect room: no walls detected at source position");
 
         RoomBlock.Builder start = chunkManager.getRoomBlockBuilderAt(x, y, z);
@@ -133,7 +149,10 @@ public class RoomDetector {
 
         int counter = 0;
         while (!queue.isEmpty()) {
-            if (++counter >= 1000) throw new FailedToDetectRoomException("Flood aborted at " + counter);
+            if (++counter >= 1000) {
+                if (!silent) LOGGER.atWarning().log("Flood aborted at " + counter);
+                return null;
+            }
 
 //            LOGGER.atInfo().log("counter: %d", counter);
 
@@ -187,7 +206,7 @@ public class RoomDetector {
                 }
 
                 if (next.y != currentRoomBlock.getY()) {
-                    if (!isInRoom(chunkManager, boundScanRadius, next.x, next.y, next.z)) {
+                    if (!isInRoom(chunkManager, boundScanRadius, next.x, next.y, next.z, overrideBlocks)) {
                         int newMaxY = next.y - 1;
                         if (newMaxY < maxY) {
                             maxY = newMaxY;
@@ -215,14 +234,15 @@ public class RoomDetector {
         return builder.build();
     }
 
-    private static boolean isInRoom(ChunkManager chunkManager, Vector3i boundScanRadius, int x, int y, int z) throws WorldChunkNullException {
-        if (!detectRoomWall(chunkManager, boundScanRadius.x, x, y, z, 1, 0)) return false;
-        if (!detectRoomWall(chunkManager, boundScanRadius.x, x, y, z, -1, 0)) return false;
-        if (!detectRoomWall(chunkManager, boundScanRadius.z, x, y, z, 0, 1)) return false;
-        return detectRoomWall(chunkManager, boundScanRadius.z, x, y, z, 0, -1);
+    private static boolean isInRoom(ChunkManager chunkManager, Vector3i boundScanRadius, int x, int y, int z, Map<Long, BlockType> overrideBlocks) throws WorldChunkNullException {
+        if (!detectRoomWall(chunkManager, boundScanRadius.x, x, y, z, 1, 0, overrideBlocks)) return false;
+        if (!detectRoomWall(chunkManager, boundScanRadius.x, x, y, z, -1, 0, overrideBlocks)) return false;
+        if (!detectRoomWall(chunkManager, boundScanRadius.z, x, y, z, 0, 1, overrideBlocks)) return false;
+        return detectRoomWall(chunkManager, boundScanRadius.z, x, y, z, 0, -1, overrideBlocks);
     }
 
-    private static boolean detectRoomWall(ChunkManager chunkManager, int boundScanRadius, int x, int y, int z, int offSetX, int offSetZ) throws WorldChunkNullException {
+    private static boolean detectRoomWall(ChunkManager chunkManager, int boundScanRadius, int x, int y, int z, int offSetX, int offSetZ, Map<Long, BlockType> overrideBlocks) throws WorldChunkNullException {
+        if (offSetX == 0 && offSetZ == 0) return false;
         int chunkX = ChunkUtil.chunkCoordinate(x);
         int chunkZ = ChunkUtil.chunkCoordinate(z);
         WorldChunk chunk = chunkManager.getChunk(chunkX, chunkZ);
@@ -231,22 +251,34 @@ public class RoomDetector {
             int bx = x + (offSetX * delta);
             int bz = z + (offSetZ * delta);
 
-            int currentChunkX = ChunkUtil.chunkCoordinate(bx);
-            int currentChunkZ = ChunkUtil.chunkCoordinate(bz);
+            BlockType type = null;
+            boolean set = false;
 
-            if (currentChunkX != chunkX || currentChunkZ != chunkZ) {
-                chunkX = currentChunkX;
-                chunkZ = currentChunkZ;
-                chunk = chunkManager.getChunk(chunkX, chunkZ);
+            if (overrideBlocks != null) {
+                long key = PositionUtils.encodePosition(bx, y, bz);
+                type = overrideBlocks.get(key);
+                set = type != null;
             }
 
-            if (chunk == null) throw new WorldChunkNullException(currentChunkX, currentChunkZ);
+            if (!set) {
+                int currentChunkX = ChunkUtil.chunkCoordinate(bx);
+                int currentChunkZ = ChunkUtil.chunkCoordinate(bz);
 
-            int blockId = chunk.getBlock(bx, y, bz);
-            if (blockId == 0) continue;
+                if (currentChunkX != chunkX || currentChunkZ != chunkZ) {
+                    chunkX = currentChunkX;
+                    chunkZ = currentChunkZ;
+                    chunk = chunkManager.getChunk(chunkX, chunkZ);
+                }
 
-            BlockType type = BlockType.getAssetMap().getAsset(blockId);
-            if (type == null) throw new UnknownBlockException(blockId);
+                if (chunk == null) throw new WorldChunkNullException(currentChunkX, currentChunkZ);
+
+                int blockId = chunk.getBlock(bx, y, bz);
+                if (blockId == BlockType.EMPTY_ID) continue;
+
+                type = BlockType.getAssetMap().getAsset(blockId);
+            }
+
+            if (type == null) throw new UnknownBlockException("Unknown block!!");
 
             if (RoomBlockRole.isRoomWall(type)) return true;
         }
@@ -254,7 +286,7 @@ public class RoomDetector {
         return false;
     }
 
-    private static int detectFloor(ChunkManager chunkManager, Vector3i boundScanRadius, int x, int y, int z) throws WorldChunkNullException {
+    private static int detectFloor(ChunkManager chunkManager, Vector3i boundScanRadius, int x, int y, int z, Map<Long, BlockType> overrideBlocks) throws WorldChunkNullException {
         WorldChunk chunk = chunkManager.getChunkFromBlock(x, z);
         if (chunk == null) throw new WorldChunkNullException(x, z, true);
 
@@ -265,11 +297,22 @@ public class RoomDetector {
 
             if (by < 0) return -1;
 
-            int blockId = chunk.getBlock(x, by, z);
+            BlockType type = null;
+            boolean set = false;
 
-            if (blockId == 0) continue;
+            if (overrideBlocks != null) {
+                long key = PositionUtils.encodePosition(x, by, z);
+                type = overrideBlocks.get(key);
+                set = type != null;
+            }
 
-            BlockType type = BlockType.getAssetMap().getAsset(blockId);
+            if (!set) {
+                int blockId = chunk.getBlock(x, by, z);
+
+                if (blockId == BlockType.EMPTY_ID) continue;
+
+                type = BlockType.getAssetMap().getAsset(blockId);
+            }
 
             if (type == null) continue;
 

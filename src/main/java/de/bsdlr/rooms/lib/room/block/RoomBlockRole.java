@@ -29,6 +29,7 @@ public enum RoomBlockRole {
         if (blockId == 0) return RoomBlockRole.EMPTY;
         if (type == null) return RoomBlockRole.NONE;
 
+        if (isRoomWallBlock(type)) return RoomBlockRole.SOLID;
         if (isEntrance(type)) return RoomBlockRole.ENTRANCE;
         if (isWindow(type)) return RoomBlockRole.WINDOW;
         if (isFurniture(type)) return RoomBlockRole.FURNITURE;
@@ -59,7 +60,12 @@ public enum RoomBlockRole {
                 && type.getOpacity() == Opacity.Solid;
     }
 
+    public static boolean isRoomWallBlock(BlockType type) {
+        return type.getMaterial() == BlockMaterial.Solid
+                && (type.getHitboxType().equals("Full") || type.getHitboxType().equals("Stairs") || type.getHitboxType().equals("Block_Half"));
+    }
+
     public static boolean isRoomWall(BlockType type) {
-        return isSolidBlock(type) || isEntrance(type) || isWindow(type);
+        return isRoomWallBlock(type) || isEntrance(type) || isWindow(type);
     }
 }

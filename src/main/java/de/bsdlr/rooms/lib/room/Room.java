@@ -28,8 +28,8 @@ public class Room {
                     room -> room.uuid)
             .add()
             .append(new KeyedCodec<>("Id", Codec.STRING),
-                    (room, s) -> room.id = s,
-                    room -> room.id)
+                    (room, s) -> room.roomTypeId = s,
+                    room -> room.roomTypeId)
             .addValidator(Validators.nonNull())
             .add()
             .append(new KeyedCodec<>("WorldUuid", Codec.UUID_BINARY),
@@ -50,7 +50,7 @@ public class Room {
     @Nonnull
     protected UUID uuid;
     @Nonnull
-    protected String id;
+    protected String roomTypeId;
     protected UUID worldUuid;
     protected int score;
     @Nonnull
@@ -59,13 +59,13 @@ public class Room {
 
     Room() {
         this.uuid = UUID.randomUUID();
-        this.id = RoomType.DEFAULT_KEY;
+        this.roomTypeId = RoomType.DEFAULT_KEY;
         this.blocks = new HashSet<>();
     }
 
-    public Room(@Nonnull String id, @Nonnull UUID worldUuid, int score, @Nonnull Set<Long> blocks) {
+    public Room(@Nonnull String roomTypeId, @Nonnull UUID worldUuid, int score, @Nonnull Set<Long> blocks) {
         this.uuid = UUID.randomUUID();
-        this.id = id;
+        this.roomTypeId = roomTypeId;
         this.worldUuid = worldUuid;
         this.score = score;
         this.blocks = blocks;
@@ -78,13 +78,13 @@ public class Room {
         if (!obj.getClass().equals(getClass())) return false;
         Room o = (Room) obj;
 
-        return id.equals(o.id) && worldUuid.equals(o.worldUuid) && score == o.score && blocks.equals(o.blocks);
+        return roomTypeId.equals(o.roomTypeId) && worldUuid.equals(o.worldUuid) && score == o.score && blocks.equals(o.blocks);
     }
 
     @Override
     public int hashCode() {
         int result = 1;
-        result = 31 * result + Objects.hashCode(id);
+        result = 31 * result + Objects.hashCode(roomTypeId);
         result = 31 * result + Objects.hashCode(worldUuid);
         result = 31 * result + Objects.hashCode(score);
         result = 31 * result + Objects.hashCode(blocks);
@@ -92,7 +92,7 @@ public class Room {
     }
 
     public RoomType getType() {
-        return RoomType.getAssetMap().getAsset(id);
+        return RoomType.getAssetMap().getAsset(roomTypeId);
     }
 
     public UUID getUuid() {
@@ -100,8 +100,8 @@ public class Room {
     }
 
     @Nonnull
-    public String getId() {
-        return id;
+    public String getRoomTypeId() {
+        return roomTypeId;
     }
 
     @Nonnull
@@ -154,16 +154,48 @@ public class Room {
             return blockId2Count;
         }
 
+        private Map<Integer, List<Boolean>> y2IsRoomWall() {
+            Map<Integer, List<Boolean>> y2Role = new HashMap<>();
+
+            for (RoomBlock block : blocks) {
+                List<Boolean> l = y2Role.get(block.getY());
+                if (l == null) {
+                    y2Role.put(block.getY(), List.of(block.getRole().isRoomWall()));
+                } else {
+                    l.add(block.getRole().isRoomWall());
+                }
+            }
+
+            return y2Role;
+        }
+
+        private int findArea() {
+            Map<Integer, List<Boolean>> y2IsRoomWall = y2IsRoomWall();
+            int area = 0;
+
+            for (List<Boolean> isRoomWallList : y2IsRoomWall.values()) {
+                if (isRoomWallList.contains(false)) {
+                    area++;
+                }
+            }
+
+            return area;
+        }
+
         @Nonnull
-        private List<RoomType> getMatching() {
+        private List<RoomType> findMatchingRoomTypes(int area) {
             Map<String, Integer> blockId2Count = getBlockId2Count();
             List<RoomType> matching = new ArrayList<>();
 
             for (RoomType type : RoomType.getAssetMap().getAssetMap().values()) {
+                if (type.minArea > area) continue;
                 boolean matches = true;
 //                LOGGER.atInfo().log("block count: %d", type.getRoomBlocks().length);
                 for (RoomBlockType blockType : type.getRoomBlocks()) {
-                    Integer count = blockId2Count.getOrDefault(blockType.getBlockId(), 0);
+                    int count = 0;
+                    for (String matchingBlockId : blockType.getMatchingBlockIds()) {
+                        count += blockId2Count.getOrDefault(matchingBlockId, 0);
+                    }
                     if (blockType.getMinCount() > count && blockType.getMaxCount() < count) {
                         matches = false;
                         break;
@@ -179,8 +211,8 @@ public class Room {
         }
 
         @Nonnull
-        private RoomType findRoomType() {
-            List<RoomType> matching = getMatching();
+        private RoomType findRoomType(int area) {
+            List<RoomType> matching = findMatchingRoomTypes(area);
             if (matching.isEmpty()) return RoomType.DEFAULT;
             if (matching.size() == 1) return matching.getFirst();
 
@@ -260,7 +292,8 @@ public class Room {
             if (!hasLightSource)
                 throw new FailedToDetectRoomException("Could not build room: room has no light source");
 
-            RoomType type = findRoomType();
+            int area = findArea();
+            RoomType type = findRoomType(area);
             String id = type.getId() == null ? "Room" : type.getId();
 
             return new Room(id, worldUuid, calculateScore(), getEncodedBlocks());

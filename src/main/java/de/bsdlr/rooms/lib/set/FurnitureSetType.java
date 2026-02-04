@@ -14,6 +14,7 @@ import com.hypixel.hytale.codec.schema.metadata.ui.UIRebuildCaches;
 import com.hypixel.hytale.codec.validation.ValidatorCache;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import de.bsdlr.rooms.config.PluginConfig;
+import de.bsdlr.rooms.lib.asset.AssetMapWithGroup;
 import de.bsdlr.rooms.lib.set.block.FurnitureSetBlockType;
 import de.bsdlr.rooms.lib.set.block.FurnitureSetBlockTypesValidator;
 import de.bsdlr.rooms.utils.ChunkManager;
@@ -22,7 +23,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Objects;
 
-public class FurnitureSetType implements JsonAssetWithMap<String, FurnitureSetTypeAssetMap<String, FurnitureSetType>> {
+public class FurnitureSetType implements JsonAssetWithMap<String, AssetMapWithGroup<String, FurnitureSetType>> {
     public static final AssetBuilderCodec<String, FurnitureSetType> CODEC = AssetBuilderCodec.builder(
                     FurnitureSetType.class, FurnitureSetType::new, Codec.STRING, (t, k) -> t.id = k, t -> t.id, (asset, data) -> asset.data = data, asset -> asset.data
             )
@@ -53,7 +54,7 @@ public class FurnitureSetType implements JsonAssetWithMap<String, FurnitureSetTy
             .add()
             .build();
     public static final ValidatorCache<String> VALIDATOR_CACHE = new ValidatorCache<>(new AssetKeyValidator<>(FurnitureSetType::getAssetStore));
-    private static AssetStore<String, FurnitureSetType, FurnitureSetTypeAssetMap<String, FurnitureSetType>> ASSET_STORE;
+    private static AssetStore<String, FurnitureSetType, AssetMapWithGroup<String, FurnitureSetType>> ASSET_STORE;
     public static final String UNKNOWN_KEY = "Unknown";
     public static final FurnitureSetType UNKNOWN = new FurnitureSetType(UNKNOWN_KEY) {
         {
@@ -73,7 +74,7 @@ public class FurnitureSetType implements JsonAssetWithMap<String, FurnitureSetTy
         return getAssetMap().getAsset(input);
     }
 
-    public static AssetStore<String, FurnitureSetType, FurnitureSetTypeAssetMap<String, FurnitureSetType>> getAssetStore() {
+    public static AssetStore<String, FurnitureSetType, AssetMapWithGroup<String, FurnitureSetType>> getAssetStore() {
         if (ASSET_STORE == null) {
             ASSET_STORE = AssetRegistry.getAssetStore(FurnitureSetType.class);
         }
@@ -81,8 +82,8 @@ public class FurnitureSetType implements JsonAssetWithMap<String, FurnitureSetTy
         return ASSET_STORE;
     }
 
-    public static FurnitureSetTypeAssetMap<String, FurnitureSetType> getAssetMap() {
-        return (FurnitureSetTypeAssetMap<String, FurnitureSetType>) getAssetStore().getAssetMap();
+    public static AssetMapWithGroup<String, FurnitureSetType> getAssetMap() {
+        return (AssetMapWithGroup<String, FurnitureSetType>) getAssetStore().getAssetMap();
     }
 
     public FurnitureSetType() {

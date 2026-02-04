@@ -5,15 +5,21 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.set.SetCodec;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.universe.world.World;
+import de.bsdlr.rooms.RoomsPlugin;
+import de.bsdlr.rooms.lib.exceptions.FailedToDetectRoomException;
 import de.bsdlr.rooms.utils.PositionUtils;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class RoomManager {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+    public static final long MIN_JOB_EXECUTION_DELAY_TICK_COUNT = 1;
     public static final BuilderCodec<RoomManager> CODEC = BuilderCodec.builder(RoomManager.class, RoomManager::new)
             .append(new KeyedCodec<>("Rooms", new SetCodec<>(Room.CODEC, HashSet::new, false)),
                     (manager, rooms) -> {
@@ -72,6 +78,63 @@ public class RoomManager {
         rooms.remove(room);
         for (Long key : room.getBlocks()) {
             longToRoom.remove(key);
+        }
+    }
+
+    public void updateAround(World world, Vector3i target, Map<Long, BlockType> overrideBlocks) {
+        Vector3i scanRadius = RoomsPlugin.get().getConfig().get().getScanRadius();
+
+        LOGGER.atInfo().log("target block: %d %d %d", target.x, target.y, target.z);
+        LOGGER.atInfo().log("scan radius : %d %d %d", scanRadius.x, scanRadius.y, scanRadius.z);
+
+        for (Long key : overrideBlocks.keySet()) {
+            BlockType type = overrideBlocks.get(key);
+            int x = PositionUtils.decodeX(key);
+            int y = PositionUtils.decodeY(key);
+            int z = PositionUtils.decodeZ(key);
+            for (PlayerRef playerRef : Universe.get().getPlayers()) {
+                playerRef.sendMessage(Message.raw("override block at " + x + " " + y + " " + z + " with " + type.getId()));
+            }
+        }
+
+        Set<Room> rooms = PositionUtils.forOffsetInRadius(scanRadius, (dx, dy, dz) -> {
+            int bx = target.x + dx;
+            int by = target.y + dy;
+            int bz = target.z + dz;
+            long key = PositionUtils.encodePosition(bx, by, bz);
+
+            Room room = getRoom(key);
+
+            try {
+                RoomDetector.setSilent(true);
+                Room detectedRoom = RoomDetector.getRoomAt(world, bx, by, bz, overrideBlocks);
+                RoomDetector.restoreSilent();
+
+                LOGGER.atInfo().log("detected room: %s", detectedRoom == null ? null : detectedRoom.getBlocks().size());
+
+                if (room != null) {
+                    if (!room.equals(detectedRoom)) {
+                        LOGGER.atInfo().log("Removing %s room at %d %d %d", room.getRoomTypeId(), bx, by, bz);
+                        removeRoom(room);
+                        return detectedRoom;
+                    }
+                } else {
+                    return detectedRoom;
+                }
+            } catch (FailedToDetectRoomException e) {
+//                LOGGER.atWarning().withCause(e).log(e.getMessage());
+                if (room != null) {
+                    removeRoom(room);
+                }
+            }
+
+            return null;
+        }, HashSet::new);
+
+        LOGGER.atInfo().log("rooms: %d", rooms.size());
+
+        for (Room room : rooms) {
+            addRoom(room);
         }
     }
 }

@@ -53,13 +53,14 @@ public class HudManager {
                         LOGGER.atInfo().log("Room is not valid: validating.");
                         Room validated = room.validate(pos, key);
                         if (validated == null) {
-                            playerRef.sendMessage(Message.raw("room is invalid"));
+                            playerRef.sendMessage(Message.raw("room is invalid, removing."));
 //                            for (Long l : room.getBlocks()) {
 //                                int bx = PositionUtils.decodeX(l);
 //                                int by = PositionUtils.decodeY(l);
 //                                int bz = PositionUtils.decodeZ(l);
 //                                world.setBlock(bx, by, bz, "Rock_Stone");
 //                            }
+                            RoomsPlugin.get().getRoomManager().removeRoom(room);
                             return;
                         } else {
                             if (room.equals(validated)) {
@@ -100,7 +101,7 @@ public class HudManager {
 
                     if (hudComponent == null) {
                         store.addComponent(playerRef.getReference(), HudComponent.getComponentType());
-                        playerRef.sendMessage(Message.raw("pos: " + pos.x + " " + pos.y + " " + pos.z + "; key: " + key + "; room: " + room.getId()));
+                        playerRef.sendMessage(Message.raw("pos: " + pos.x + " " + pos.y + " " + pos.z + "; key: " + key + "; room: " + room.getRoomTypeId()));
                         hudComponent = store.getComponent(playerRef.getReference(), HudComponent.getComponentType());
                         if (hudComponent == null) {
                             LOGGER.atWarning().log("Showing hud component still null.");

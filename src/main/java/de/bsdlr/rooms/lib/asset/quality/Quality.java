@@ -1,4 +1,4 @@
-package de.bsdlr.rooms.lib.quality;
+package de.bsdlr.rooms.lib.asset.quality;
 
 import com.hypixel.hytale.assetstore.AssetExtraInfo;
 import com.hypixel.hytale.assetstore.AssetKeyValidator;

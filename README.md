@@ -19,3 +19,4 @@
     - [ ] add required rotation (relative)
 - [ ] if multiple rooms match, give ability to choose from them.
 - [ ] separate each worlds rooms
+- [ ] placing/breaking blocks support for blocks that are larger than 1x1x1

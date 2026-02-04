@@ -39,7 +39,7 @@ public class DetectCommand extends AbstractPlayerCommand {
 
             for (Room room : rooms) {
                 roomManager.addRoom(room);
-                ctx.sendMessage(Message.raw("add room: " + room.getId()));
+                ctx.sendMessage(Message.raw("add room: " + room.getRoomTypeId()));
             }
         } catch (Exception e) {
             LOGGER.atSevere().withCause(e).log(e.getMessage());
