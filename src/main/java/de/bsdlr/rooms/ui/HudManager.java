@@ -12,6 +12,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import de.bsdlr.rooms.RoomsPlugin;
 import de.bsdlr.rooms.lib.room.Room;
+import de.bsdlr.rooms.lib.room.RoomManager;
 import de.bsdlr.rooms.utils.PositionUtils;
 
 import java.util.Objects;
@@ -45,8 +46,9 @@ public class HudManager {
 
                 Vector3d position = playerRef.getTransform().getPosition();
                 Vector3i pos = PositionUtils.positionToVector3i(position);
+//                playerRef.sendMessage(Message.raw(String.format("current position: %d %d %d", pos.x, pos.y, pos.z)));
                 long key = PositionUtils.encodePosition(pos);
-                Room room = RoomsPlugin.get().getRoomManager().getRoom(key);
+                Room room = RoomsPlugin.get().getRoomManagerAndComputeIfAbsent(world.getWorldConfig().getUuid()).getRoom(key);
 
                 if (room != null) {
                     if (!room.isValidated()) {
@@ -60,15 +62,16 @@ public class HudManager {
 //                                int bz = PositionUtils.decodeZ(l);
 //                                world.setBlock(bx, by, bz, "Rock_Stone");
 //                            }
-                            RoomsPlugin.get().getRoomManager().removeRoom(room);
+                            RoomsPlugin.get().getRoomManagerAndComputeIfAbsent(world.getWorldConfig().getUuid()).removeRoom(room);
                             return;
                         } else {
                             if (room.equals(validated)) {
                                 playerRef.sendMessage(Message.raw("Room and validated room are equal."));
                             } else {
                                 playerRef.sendMessage(Message.raw("Room and validated room are NOT equal."));
-                                RoomsPlugin.get().getRoomManager().removeRoom(room);
-                                RoomsPlugin.get().getRoomManager().addRoom(validated);
+                                RoomManager roomManager = RoomsPlugin.get().getRoomManagerAndComputeIfAbsent(world.getWorldConfig().getUuid());
+                                roomManager.removeRoom(room);
+                                roomManager.addRoom(validated);
                             }
                         }
                     }
@@ -101,7 +104,7 @@ public class HudManager {
 
                     if (hudComponent == null) {
                         store.addComponent(playerRef.getReference(), HudComponent.getComponentType());
-                        playerRef.sendMessage(Message.raw("pos: " + pos.x + " " + pos.y + " " + pos.z + "; key: " + key + "; room: " + room.getRoomTypeId()));
+                        playerRef.sendMessage(Message.raw("pos: " + pos.x + " " + pos.y + " " + pos.z + "; key: " + key + "; room: " + (room == null ? null : room.getRoomTypeId())));
                         hudComponent = store.getComponent(playerRef.getReference(), HudComponent.getComponentType());
                         if (hudComponent == null) {
                             LOGGER.atWarning().log("Showing hud component still null.");
@@ -109,7 +112,7 @@ public class HudManager {
                         }
                     }
 
-                    if (!Objects.equals(hudComponent.getRoomEntity(), room)) {
+                    if (!Objects.equals(hudComponent.getRoom(), room)) {
                         playerRef.sendMessage(Message.raw("rooms are not the same."));
                         LOGGER.atInfo().log("Updating room hud.");
                         hudComponent.setRoomEntity(room);

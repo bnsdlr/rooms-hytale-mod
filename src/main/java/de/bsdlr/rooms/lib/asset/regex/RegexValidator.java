@@ -5,6 +5,7 @@ import com.hypixel.hytale.codec.schema.config.Schema;
 import com.hypixel.hytale.codec.schema.metadata.ui.UIEditor;
 import com.hypixel.hytale.codec.validation.ValidationResults;
 import com.hypixel.hytale.codec.validation.Validator;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import de.bsdlr.rooms.RoomsPlugin;
 
 import java.util.Set;
@@ -13,7 +14,12 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 public class RegexValidator implements Validator<Regex> {
+    public static final RegexValidator BLOCK_TYPE_KEYS_VALIDATOR = new RegexValidator(BlockType.getAssetMap().getAssetMap().keySet());
     private final Set<String> options;
+
+    public RegexValidator() {
+        this.options = null;
+    }
 
     public RegexValidator(Set<String> options) {
         this.options = options;

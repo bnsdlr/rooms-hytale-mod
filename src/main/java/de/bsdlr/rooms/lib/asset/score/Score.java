@@ -24,6 +24,7 @@ public class Score {
             .add()
             .documentation("Score to add after multiplying.")
             .build();
+    public static final Score DEFAULT = new Score();
     protected double multiplier = 1.0;
     protected int addBefore = 0;
     protected int addAfter = 0;

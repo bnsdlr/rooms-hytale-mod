@@ -15,6 +15,7 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import de.bsdlr.rooms.RoomsPlugin;
+import de.bsdlr.rooms.lib.room.RoomDetector;
 import de.bsdlr.rooms.utils.PositionUtils;
 
 import javax.annotation.Nonnull;
@@ -31,7 +32,6 @@ public class PlaceBlockEventSystem extends EntityEventSystem<EntityStore, PlaceB
 
     @Override
     public void handle(int index, @Nonnull ArchetypeChunk<EntityStore> archetypeChunk, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer, @Nonnull PlaceBlockEvent event) {
-        World world = commandBuffer.getExternalData().getWorld();
         Vector3i target = event.getTargetBlock();
 
         if (event.getItemInHand() == null) {
@@ -51,11 +51,29 @@ public class PlaceBlockEventSystem extends EntityEventSystem<EntityStore, PlaceB
         }
 
         LOGGER.atInfo().log("target: %d %d %d", target.x, target.y, target.z);
+        LOGGER.atInfo().log("placed %s block", type.getId());
 
         Map<Long, BlockType> overrideBlocks = new HashMap<>();
-        overrideBlocks.put(PositionUtils.encodePosition(target), type);
+        long key = PositionUtils.encodePosition(target);
+        overrideBlocks.put(key, type);
 
-        RoomsPlugin.get().getRoomManager().updateAround(world, target, overrideBlocks);
+        LOGGER.atInfo().log("decoded block pos: %d %d %d", PositionUtils.decodeX(key), PositionUtils.decodeY(key), PositionUtils.decodeZ(key));
+
+        for (Map.Entry<Long, BlockType> entry : overrideBlocks.entrySet()) {
+            long k = entry.getKey();
+            BlockType btype = entry.getValue();
+            int decodedX = PositionUtils.decodeX(k);
+            int decodedY = PositionUtils.decodeY(k);
+            int decodedZ = PositionUtils.decodeZ(k);
+            LOGGER.atInfo().log("%d %d %d %s", decodedX, decodedY, decodedZ, btype.getId());
+        }
+
+        World world = commandBuffer.getExternalData().getWorld();
+//        RoomDetector.setSilent(true);
+        RoomsPlugin.get()
+                .getRoomManagerAndComputeIfAbsent(world.getWorldConfig().getUuid())
+                .updateAround(world, target, overrideBlocks);
+//        RoomDetector.restoreSilent();
     }
 
     @Nullable

@@ -1,54 +1,54 @@
 package de.bsdlr.rooms.lib.room.block;
 
-import com.hypixel.hytale.codec.Codec;
-import com.hypixel.hytale.codec.KeyedCodec;
-import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.codec.codecs.EnumCodec;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.protocol.ColorLight;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import com.hypixel.hytale.server.core.codec.ProtocolCodecs;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import de.bsdlr.rooms.utils.BlockUtils;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Objects;
 
 public class RoomBlock {
-    public static final BuilderCodec<RoomBlock> CODEC = BuilderCodec.builder(RoomBlock.class, RoomBlock::new)
-            .append(new KeyedCodec<>("BlockId", Codec.INTEGER, true),
-                    RoomBlock::setBlockId,
-                    RoomBlock::getBlockId).add()
-            .append(new KeyedCodec<>("Position", Vector3i.CODEC, true),
-                    RoomBlock::setPos,
-                    RoomBlock::getPos).add()
-            .append(new KeyedCodec<>("Role", new EnumCodec<>(RoomBlockRole.class), true),
-                    RoomBlock::setRole,
-                    RoomBlock::getRole).add()
-            .append(new KeyedCodec<>("Light", ProtocolCodecs.COLOR_LIGHT),
-                    RoomBlock::setLight,
-                    RoomBlock::getLight).add()
-            .build();
+//    public static final BuilderCodec<RoomBlock> CODEC = BuilderCodec.builder(RoomBlock.class, RoomBlock::new)
+//            .append(new KeyedCodec<>("BlockId", , true),
+//                    RoomBlock::setBlockId,
+//                    RoomBlock::getBlockId).add()
+//            .append(new KeyedCodec<>("Position", Vector3i.CODEC, true),
+//                    RoomBlock::setPos,
+//                    RoomBlock::getPos).add()
+//            .append(new KeyedCodec<>("Role", new EnumCodec<>(RoomBlockRole.class), true),
+//                    RoomBlock::setRole,
+//                    RoomBlock::getRole).add()
+//            .build();
 
-    private int blockId;
+    @Nonnull
+    private BlockType type;
     @Nonnull
     private Vector3i pos;
     @Nonnull
     private RoomBlockRole role;
-    @Nullable
-    private ColorLight light;
+    private final boolean filler;
 
     RoomBlock() {
-        this.blockId = 0;
+        this.type = BlockType.EMPTY;
         this.pos = new Vector3i();
-        this.role = RoomBlockRole.NONE;
-        this.light = null;
+        this.role = RoomBlockRole.UNKNOWN;
+        this.filler = false;
     }
 
-    public RoomBlock(int blockId, @Nonnull Vector3i pos, @Nonnull RoomBlockRole role, @Nullable ColorLight light) {
-        this.blockId = blockId;
+    public RoomBlock(BlockType type, @Nonnull Vector3i pos, ChunkStore chunkStore) {
+        this.type = type == null ? BlockType.UNKNOWN : type;
+        this.pos = pos;
+        this.role = RoomBlockRole.getRole(type);
+        this.filler = BlockUtils.isFiller(chunkStore, pos.x, pos.y, pos.z);
+    }
+
+    public RoomBlock(@Nonnull BlockType type, @Nonnull Vector3i pos, @Nonnull RoomBlockRole role, boolean filler) {
+        this.type = type;
         this.pos = pos;
         this.role = role;
-        this.light = light;
+        this.filler = filler;
     }
 
     @Override
@@ -59,29 +59,28 @@ public class RoomBlock {
 
         RoomBlock o = (RoomBlock) obj;
 
-        return this.blockId == o.blockId
+        return this.type.equals(o.type)
                 && this.pos.equals(o.pos)
-                && this.role.equals(o.role)
-                && Objects.equals(this.light, o.light);
+                && this.role.equals(o.role);
 
     }
 
     @Override
     public int hashCode() {
         int result = 1;
-        result = 31 * result + Objects.hashCode(this.blockId);
+        result = 31 * result + Objects.hashCode(this.type);
         result = 31 * result + Objects.hashCode(this.pos);
         result = 31 * result + Objects.hashCode(this.role);
-        result = 31 * result + Objects.hashCode(this.light);
         return result;
     }
 
-    private void setBlockId(int blockId) {
-        this.blockId = blockId;
+    private void setType(@Nonnull BlockType type) {
+        this.type = type;
     }
 
-    public int getBlockId() {
-        return blockId;
+    @Nonnull
+    public BlockType getType() {
+        return type;
     }
 
     private void setPos(@Nonnull Vector3i pos) {
@@ -112,143 +111,33 @@ public class RoomBlock {
         return role;
     }
 
-    private void setLight(ColorLight light) {
-        this.light = light;
-    }
-
-    public ColorLight getLight() {
-        return light;
-    }
-
-    public boolean isSolid() {
-        return role == RoomBlockRole.SOLID;
-    }
-
-    public boolean isEntrance() {
-        return role == RoomBlockRole.ENTRANCE;
-    }
-
-    public boolean isFurniture() {
-        return role == RoomBlockRole.FURNITURE;
-    }
-
-    public boolean isRoomWall() {
-        return role.isRoomWall();
-    }
-
-    public boolean isEmpty() {
-        return role == RoomBlockRole.EMPTY;
+    public boolean isFiller() {
+        return filler;
     }
 
     public static class Builder {
-        private final int blockId;
+        private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+        @Nonnull
+        private final BlockType type;
         @Nonnull
         private final Vector3i pos;
         @Nonnull
-        private RoomBlockRole role = RoomBlockRole.NONE;
-        @Nullable
-        private ColorLight light = null;
+        private final RoomBlockRole role;
+        private Vector3i filler = null;
 
-        private boolean lightSet = false;
-        private boolean roleSet = false;
-        private boolean typeSet = false;
-        private boolean findMissingBlockInfoOnBuildEnabled = true;
-        private BlockType type = null;
-
-        public Builder(int blockId, int x, int y, int z) {
-            this.blockId = blockId;
-            this.pos = new Vector3i(x, y, z);
-        }
-
-        public Builder(int blockId, @Nonnull Vector3i vec) {
-            this.blockId = blockId;
-            this.pos = vec;
-        }
-
-        public Vector3i getPos() {
-            return pos;
-        }
-
-        public int getX() {
-            return pos.x;
-        }
-
-        public int getY() {
-            return pos.y;
-        }
-
-        public int getZ() {
-            return pos.z;
-        }
-
-        public int getBlockId() {
-            return blockId;
-        }
-
-        public RoomBlockRole setAndGetRole() {
-            BlockType type = this.getAndSetBlockTypeIfNull();
-            this.setRole(RoomBlockRole.getRole(blockId, type));
-            return this.role;
-        }
-
-        public Builder setRole(@Nonnull RoomBlockRole role) {
-            this.roleSet = true;
-            this.role = role;
-            return this;
-        }
-
-        public RoomBlockRole getRole() {
-            return role;
-        }
-
-        public Builder setLight(ColorLight light) {
-            this.lightSet = true;
-            this.light = light;
-            return this;
-        }
-
-        public ColorLight getLight() {
-            return light;
-        }
-
-        public Builder disableFindBlockInfoOnBuild() {
-            this.findMissingBlockInfoOnBuildEnabled = false;
-            return this;
-        }
-
-        public boolean isFindMissingBlockInfoOnBuildEnabled() {
-            return findMissingBlockInfoOnBuildEnabled;
-        }
-
-        public BlockType getAndSetBlockTypeIfNull() {
-            if (type == null) return this.setAndGetBlockType();
-            else return type;
-        }
-
-        public BlockType setAndGetBlockType() {
-            this.setBlockType(BlockType.getAssetMap().getAsset(blockId));
-            return this.type;
-        }
-
-        public Builder setBlockType(BlockType type) {
-            this.typeSet = true;
+        public Builder(@Nonnull BlockType type, @Nonnull Vector3i vec) {
             this.type = type;
-            return this;
+            this.pos = vec;
+            this.role = RoomBlockRole.getRole(type);
         }
 
-        public BlockType getBlockType() {
-            return type;
+        public Builder setFiller(ChunkStore chunkStore) {
+            this.filler = BlockUtils.getFiller(chunkStore, pos.x, pos.y, pos.z);
+            return this;
         }
 
         public RoomBlock build() {
-            if (findMissingBlockInfoOnBuildEnabled) {
-                if (type == null && !typeSet) this.type = BlockType.getAssetMap().getAsset(blockId);
-                if (type != null) {
-                    if (!roleSet) this.role = RoomBlockRole.getRole(blockId, type);
-                    if (!lightSet) this.light = type.getLight();
-                }
-            }
-            return new RoomBlock(blockId, pos, role, light);
+            return new RoomBlock(type, pos, role, BlockUtils.isFiller(filler));
         }
     }
 }

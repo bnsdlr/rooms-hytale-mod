@@ -19,7 +19,6 @@ import java.util.*;
 
 public class RoomManager {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-    public static final long MIN_JOB_EXECUTION_DELAY_TICK_COUNT = 1;
     public static final BuilderCodec<RoomManager> CODEC = BuilderCodec.builder(RoomManager.class, RoomManager::new)
             .append(new KeyedCodec<>("Rooms", new SetCodec<>(Room.CODEC, HashSet::new, false)),
                     (manager, rooms) -> {
@@ -106,9 +105,7 @@ public class RoomManager {
             Room room = getRoom(key);
 
             try {
-                RoomDetector.setSilent(true);
                 Room detectedRoom = RoomDetector.getRoomAt(world, bx, by, bz, overrideBlocks);
-                RoomDetector.restoreSilent();
 
                 LOGGER.atInfo().log("detected room: %s", detectedRoom == null ? null : detectedRoom.getBlocks().size());
 

@@ -7,6 +7,11 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 public class PositionUtils {
+    public static final int TWO_TO_THE_POWER_OF_ELEVEN = 2048;
+    public static final int TWO_TO_THE_POWER_OF_TWELVE = 4096;
+    public static final int TWO_TO_THE_POWER_OF_TWENTY_FIVE = 33554432;
+    public static final int TWO_TO_THE_POWER_OF_TWENTY_SIX = 67108864;
+
     public static void forOffsetInRadius(Vector3i radius, TriFunction<Integer, Integer, Integer, Void> f) {
         for (int dx = -radius.x + 1; dx < radius.x; dx++) {
             for (int dy = -radius.y + 1; dy < radius.y; dy++) {
@@ -52,16 +57,18 @@ public class PositionUtils {
     }
 
     public static int decodeX(long encoded) {
-        return (int) (encoded >> 38);
+        int x = (int) (encoded >> 38) & 0x3FFFFFF;
+        return x >= TWO_TO_THE_POWER_OF_TWENTY_FIVE ? x - TWO_TO_THE_POWER_OF_TWENTY_SIX : x;
     }
 
     public static int decodeY(long encoded) {
         int y = (int) (encoded & 0xFFF);
-        return y >= 2048 ? y - 4096 : y;
+        return y >= TWO_TO_THE_POWER_OF_ELEVEN ? y - TWO_TO_THE_POWER_OF_TWELVE : y;
     }
 
     public static int decodeZ(long encoded) {
-        return (int) ((encoded >> 12) & 0x3FFFFFF);
+        int z = (int) ((encoded >> 12) & 0x3FFFFFF);
+        return z >= TWO_TO_THE_POWER_OF_TWENTY_FIVE ? z - TWO_TO_THE_POWER_OF_TWENTY_SIX : z;
     }
 
 //    public static Vector3i positionToVector3i(Vector3d position) {

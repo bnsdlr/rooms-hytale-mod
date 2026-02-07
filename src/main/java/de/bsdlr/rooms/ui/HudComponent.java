@@ -1,6 +1,5 @@
 package de.bsdlr.rooms.ui;
 
-import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
@@ -12,10 +11,10 @@ import javax.annotation.Nullable;
 
 public class HudComponent implements Component<EntityStore> {
     public static final BuilderCodec<HudComponent> CODEC = BuilderCodec.builder(HudComponent.class, HudComponent::new)
-            .append(new KeyedCodec<>("Room", Room.CODEC),
-                    (hud, s) -> hud.room = s,
-                    hud -> hud.room)
-            .add()
+//            .append(new KeyedCodec<>("Room", Room.CODEC),
+//                    (hud, s) -> hud.room = s,
+//                    hud -> hud.room)
+//            .add()
             .build();
     public static ComponentType<EntityStore, HudComponent> TYPE;
     private Room room = null;
@@ -40,7 +39,7 @@ public class HudComponent implements Component<EntityStore> {
         return new HudComponent(this);
     }
 
-    public Room getRoomEntity() {
+    public Room getRoom() {
         return room;
     }
 

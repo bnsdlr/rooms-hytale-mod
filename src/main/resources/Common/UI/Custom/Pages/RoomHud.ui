@@ -1,6 +1,6 @@
 $C = "../Common.ui";
 
-Group {
+Group #Container {
     LayoutMode: Top;
 //    ClipChildren: true;
     Background: (Color: #0b111c(0.96));

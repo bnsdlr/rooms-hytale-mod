@@ -3,6 +3,7 @@ package de.bsdlr.rooms.ui;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
+import com.hypixel.hytale.server.core.ui.Value;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import de.bsdlr.rooms.lib.room.Room;
@@ -10,12 +11,15 @@ import de.bsdlr.rooms.lib.room.RoomTranslationProperties;
 import de.bsdlr.rooms.lib.room.RoomType;
 
 import javax.annotation.Nonnull;
+import java.awt.*;
 
 public class RoomHud extends CustomUIHud {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-    private static final String NAME_ID = "#Name.TextSpans";
-    private static final String SCORE_ID = "#Score.TextSpans";
-    private static final String DESCRIPTION_ID = "#Description.TextSpans";
+    private static final String CONTAINER_ID = "#Container";
+    private static final String NAME_ID = "#Name";
+    private static final String SCORE_ID = "#Score";
+    private static final String DESCRIPTION_ID = "#Description";
+    private static final String TEXT_SPANS = ".TextSpans";
 
     public RoomHud(@Nonnull PlayerRef playerRef) {
         super(playerRef);
@@ -51,19 +55,19 @@ public class RoomHud extends CustomUIHud {
         update(false, uiCommandBuilder);
     }
 
-    public void updateName(Message roomName) {
-        update(NAME_ID, roomName);
+    private void updateName(Message roomName) {
+        update(NAME_ID + TEXT_SPANS, roomName);
     }
 
-    public void updateScore(int score) {
-        update(SCORE_ID, Message.raw(String.valueOf(score)));
+    private void updateScore(int score) {
+        update(SCORE_ID + TEXT_SPANS, Message.raw(String.valueOf(score)));
     }
 
-    public void updateDescription(String description) {
+    private void updateDescription(String description) {
         if (description == null) {
-            update(DESCRIPTION_ID, Message.empty());
+            update(DESCRIPTION_ID + TEXT_SPANS, Message.empty());
         } else {
-            update(DESCRIPTION_ID, Message.raw(description));
+            update(DESCRIPTION_ID + TEXT_SPANS, Message.raw(description));
         }
     }
 }

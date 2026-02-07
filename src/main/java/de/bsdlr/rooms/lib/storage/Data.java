@@ -70,4 +70,8 @@ public class Data<T> {
                     : BsonUtil.writeDocument(this.path, this.codec.encode(this.data, new ExtraInfo()));
         }
     }
+
+    public boolean isLoaded() {
+        return data != null;
+    }
 }

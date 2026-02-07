@@ -132,6 +132,7 @@ public class Room {
     public static class Builder {
         private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
         private final Set<RoomBlock> blocks = new HashSet<>();
+        private final Set<RoomBlock> fillerBlocks = new HashSet<>();
         private UUID worldUuid;
 
         public Builder() {
@@ -146,9 +147,7 @@ public class Room {
             Map<String, Integer> blockId2Count = new HashMap<>();
 
             for (RoomBlock block : blocks) {
-                BlockType type = BlockType.getAssetMap().getAsset(block.getBlockId());
-                if (type == null) continue;
-                blockId2Count.merge(type.getId(), 1, Integer::sum);
+                blockId2Count.merge(block.getType().getId(), 1, Integer::sum);
             }
 
             return blockId2Count;
@@ -160,7 +159,9 @@ public class Room {
             for (RoomBlock block : blocks) {
                 List<Boolean> l = y2Role.get(block.getY());
                 if (l == null) {
-                    y2Role.put(block.getY(), List.of(block.getRole().isRoomWall()));
+                    l = new ArrayList<>();
+                    l.add(block.getRole().isRoomWall());
+                    y2Role.put(block.getY(), l);
                 } else {
                     l.add(block.getRole().isRoomWall());
                 }
@@ -194,9 +195,13 @@ public class Room {
                 for (RoomBlockType blockType : type.getRoomBlocks()) {
                     int count = 0;
                     for (String matchingBlockId : blockType.getMatchingBlockIds()) {
+//                        if (blockId2Count.getOrDefault(matchingBlockId, 0) > 0) {
+//                            LOGGER.atWarning().log("%s matches pattern %s", matchingBlockId, blockType.getBlockIdPattern().getPattern());
+//                        }
                         count += blockId2Count.getOrDefault(matchingBlockId, 0);
                     }
-                    if (blockType.getMinCount() > count && blockType.getMaxCount() < count) {
+//                    LOGGER.atInfo().log("%d matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern().getPattern(), blockType.getMinCount(), blockType.getMaxCount());
+                    if (blockType.getMinCount() > count || blockType.getMaxCount() < count) {
                         matches = false;
                         break;
                     }
@@ -204,6 +209,7 @@ public class Room {
 
                 if (matches) {
                     matching.add(type);
+                    LOGGER.atWarning().log("room %s matches", type.getId());
                 }
             }
 
@@ -232,6 +238,9 @@ public class Room {
             for (RoomBlock roomBlock : this.blocks) {
                 blocks.add(PositionUtils.encodePosition(roomBlock.getPos()));
             }
+            for (RoomBlock fillerBlock : this.fillerBlocks) {
+                blocks.add(PositionUtils.encodePosition(fillerBlock.getPos()));
+            }
 
             return blocks;
         }
@@ -241,16 +250,16 @@ public class Room {
             int score = 0;
 
             for (RoomBlock roomBlock : blocks) {
-                if (roomBlock.getBlockId() == BlockType.EMPTY_ID) continue;
-                if (roomBlock.getBlockId() == BlockType.UNKNOWN_ID) continue;
-                if (roomBlock.getRole() == RoomBlockRole.NONE) continue;
+                if (roomBlock.getType().isUnknown()) continue;
+                if (roomBlock.getType().getId().equals(BlockType.EMPTY_KEY)) continue;
+                if (roomBlock.getRole() == RoomBlockRole.UNKNOWN) continue;
                 switch (roomBlock.getRole()) {
                     case SOLID -> score += 5;
                     case FURNITURE -> score += 20;
                     case ENTRANCE -> score += 50;
                     case WINDOW -> score += 10;
                 }
-                if (roomBlock.getLight() != null) {
+                if (roomBlock.getType().getLight() != null) {
                     score += 5;
                 }
             }
@@ -263,7 +272,11 @@ public class Room {
         }
 
         public void addBlock(RoomBlock roomBlock) {
-            this.blocks.add(roomBlock);
+            if (roomBlock.isFiller()) {
+                this.fillerBlocks.add(roomBlock);
+            } else {
+                this.blocks.add(roomBlock);
+            }
         }
 
         public void removeIf(Predicate<RoomBlock> f) {
@@ -277,7 +290,7 @@ public class Room {
             for (RoomBlock block : blocks) {
                 if (hasEntrance && hasLightSource) break;
                 if (block.getRole() == RoomBlockRole.ENTRANCE) hasEntrance = true;
-                if (block.getLight() != null) hasLightSource = true;
+                if (block.getType().getLight() != null) hasLightSource = true;
             }
 
             if (worldUuid == null) {

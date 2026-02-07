@@ -3,10 +3,13 @@ package de.bsdlr.rooms;
 import com.hypixel.hytale.assetstore.map.IndexedLookupTableAssetMap;
 import com.hypixel.hytale.component.ComponentRegistryProxy;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.protocol.packets.setup.WorldLoadFinished;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.asset.HytaleAssetStore;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSystem;
+import com.hypixel.hytale.server.core.io.adapter.PacketAdapters;
+import com.hypixel.hytale.server.core.io.adapter.PacketWatcher;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -14,17 +17,20 @@ import com.hypixel.hytale.server.core.util.Config;
 import de.bsdlr.rooms.commands.*;
 import de.bsdlr.rooms.config.PluginConfig;
 import de.bsdlr.rooms.lib.asset.quality.Quality;
+import de.bsdlr.rooms.lib.asset.score.ScoreGroup;
 import de.bsdlr.rooms.lib.room.RoomManager;
 import de.bsdlr.rooms.lib.room.RoomType;
 import de.bsdlr.rooms.lib.set.FurnitureSetType;
 import de.bsdlr.rooms.lib.asset.AssetMapWithGroup;
 import de.bsdlr.rooms.lib.storage.Data;
+import de.bsdlr.rooms.lib.storage.DataManager;
 import de.bsdlr.rooms.lib.systems.BreakBlockEventSystem;
 import de.bsdlr.rooms.lib.systems.PlaceBlockEventSystem;
 import de.bsdlr.rooms.ui.HudComponent;
 import de.bsdlr.rooms.ui.HudManager;
 
 import java.util.Collections;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class RoomsPlugin extends JavaPlugin {
@@ -32,7 +38,7 @@ public class RoomsPlugin extends JavaPlugin {
     private static RoomsPlugin instance;
 
     private final Config<PluginConfig> config;
-    private final Data<RoomManager> roomManager;
+    private final DataManager<UUID, RoomManager> roomDataManager;
 
     public static RoomsPlugin get() {
         return instance;
@@ -41,7 +47,7 @@ public class RoomsPlugin extends JavaPlugin {
     public RoomsPlugin(JavaPluginInit init) {
         super(init);
         config = this.withConfig("config", PluginConfig.CODEC);
-        roomManager = new Data<>(this.getDataDirectory(), "rooms", RoomManager.CODEC);
+        roomDataManager = new DataManager<>(this.getDataDirectory(), "rooms", RoomManager.CODEC);
     }
 
     @Override
@@ -66,9 +72,9 @@ public class RoomsPlugin extends JavaPlugin {
         config.get().validate();
         config.save();
 
-        roomManager.load();
-        roomManager.get();
-        roomManager.save();
+//        roomManager.load();
+//        roomManager.get();
+//        roomManager.save();
 
         this.getCommandRegistry().registerCommand(new RoomsCommand());
         this.getCommandRegistry().registerCommand(new DetectCommand());
@@ -110,19 +116,23 @@ public class RoomsPlugin extends JavaPlugin {
 //                }
 //        );
 
-        // Builder Type Asset Store
-        AssetMapWithGroup<String, RoomType> roomTypeAssetMap = new AssetMapWithGroup<>(RoomType[]::new, RoomType::getGroup);
-        HytaleAssetStore.Builder<String, RoomType, AssetMapWithGroup<String, RoomType>> roomTypeAssetStoreBuilder = HytaleAssetStore.builder(RoomType.class, roomTypeAssetMap);
-        roomTypeAssetStoreBuilder.setPath("Rooms/Rooms");
-        roomTypeAssetStoreBuilder.setCodec(RoomType.CODEC);
-        roomTypeAssetStoreBuilder.setKeyFunction(RoomType::getId);
-        roomTypeAssetStoreBuilder.loadsAfter(BlockType.class);
-        roomTypeAssetStoreBuilder.setReplaceOnRemove(RoomType::getUnknownFor);
-        roomTypeAssetStoreBuilder.preLoadAssets(Collections.singletonList(RoomType.DEFAULT));
-//        roomTypeAssetStoreBuilder.setPacketGenerator(new RoomTypePacketGenerator());
-//        roomTypeAssetStoreBuilder.setNotificationItemFunction(item -> new ItemStack(item, 1).toPacket());
-//        roomTypeAssetStoreBuilder.setIdProvider(Item.class);
-        this.getAssetRegistry().register(roomTypeAssetStoreBuilder.build());
+        // ScoreGroups Asset Store
+        HytaleAssetStore.Builder<String, ScoreGroup, IndexedLookupTableAssetMap<String, ScoreGroup>> scoreGroupAssetStoreBuilder = HytaleAssetStore.builder(ScoreGroup.class, new IndexedLookupTableAssetMap<>(ScoreGroup[]::new));
+        scoreGroupAssetStoreBuilder.setPath("Rooms/ScoreGroups");
+        scoreGroupAssetStoreBuilder.setCodec(ScoreGroup.CODEC);
+        scoreGroupAssetStoreBuilder.setKeyFunction(ScoreGroup::getId);
+        scoreGroupAssetStoreBuilder.setReplaceOnRemove(ScoreGroup::new);
+        this.getAssetRegistry().register(scoreGroupAssetStoreBuilder.build());
+
+        // Quality Asset Store
+        HytaleAssetStore.Builder<String, Quality, IndexedLookupTableAssetMap<String, Quality>> qualityAssetStoreBuilder = HytaleAssetStore.builder(Quality.class, new IndexedLookupTableAssetMap<>(Quality[]::new));
+        qualityAssetStoreBuilder.setPath("Rooms/Qualities");
+        qualityAssetStoreBuilder.setCodec(Quality.CODEC);
+        qualityAssetStoreBuilder.setKeyFunction(Quality::getId);
+//        qualityAssetStoreBuilder.loadsAfter(ParticleSystem.class);
+        qualityAssetStoreBuilder.setReplaceOnRemove(Quality::new);
+        qualityAssetStoreBuilder.preLoadAssets(Collections.singletonList(Quality.DEFAULT_QUALITY));
+        this.getAssetRegistry().register(qualityAssetStoreBuilder.build());
 
         // Furniture Set Type Asset Store
         AssetMapWithGroup<String, FurnitureSetType> furnitureSetTypeAssetMap = new AssetMapWithGroup<>(FurnitureSetType[]::new, FurnitureSetType::getGroup);
@@ -130,19 +140,23 @@ public class RoomsPlugin extends JavaPlugin {
         setTypeAssetStoreBuilder.setPath("Rooms/FurnitureSets");
         setTypeAssetStoreBuilder.setCodec(FurnitureSetType.CODEC);
         setTypeAssetStoreBuilder.setKeyFunction(FurnitureSetType::getId);
-        setTypeAssetStoreBuilder.loadsAfter(BlockType.class);
+        setTypeAssetStoreBuilder.loadsAfter(Quality.class);
         setTypeAssetStoreBuilder.setReplaceOnRemove(FurnitureSetType::getUnknownFor);
         this.getAssetRegistry().register(setTypeAssetStoreBuilder.build());
 
-        // Quality Asset Store
-        HytaleAssetStore.Builder<String, Quality, IndexedLookupTableAssetMap<String, Quality>> qualityAssetStoreBuilder = HytaleAssetStore.builder(Quality.class, new IndexedLookupTableAssetMap<>(Quality[]::new));
-        qualityAssetStoreBuilder.setPath("Rooms/Qualities");
-        qualityAssetStoreBuilder.setCodec(Quality.CODEC);
-        qualityAssetStoreBuilder.setKeyFunction(Quality::getId);
-        qualityAssetStoreBuilder.loadsAfter(ParticleSystem.class);
-        qualityAssetStoreBuilder.setReplaceOnRemove(Quality::new);
-        qualityAssetStoreBuilder.preLoadAssets(Collections.singletonList(Quality.DEFAULT_QUALITY));
-        this.getAssetRegistry().register(qualityAssetStoreBuilder.build());
+        // Builder Type Asset Store
+        AssetMapWithGroup<String, RoomType> roomTypeAssetMap = new AssetMapWithGroup<>(RoomType[]::new, RoomType::getGroup);
+        HytaleAssetStore.Builder<String, RoomType, AssetMapWithGroup<String, RoomType>> roomTypeAssetStoreBuilder = HytaleAssetStore.builder(RoomType.class, roomTypeAssetMap);
+        roomTypeAssetStoreBuilder.setPath("Rooms/Rooms");
+        roomTypeAssetStoreBuilder.setCodec(RoomType.CODEC);
+        roomTypeAssetStoreBuilder.setKeyFunction(RoomType::getId);
+        roomTypeAssetStoreBuilder.loadsAfter(FurnitureSetType.class);
+        roomTypeAssetStoreBuilder.setReplaceOnRemove(RoomType::getUnknownFor);
+        roomTypeAssetStoreBuilder.preLoadAssets(Collections.singletonList(RoomType.DEFAULT));
+//        roomTypeAssetStoreBuilder.setPacketGenerator(new RoomTypePacketGenerator());
+//        roomTypeAssetStoreBuilder.setNotificationItemFunction(item -> new ItemStack(item, 1).toPacket());
+//        roomTypeAssetStoreBuilder.setIdProvider(Item.class);
+        this.getAssetRegistry().register(roomTypeAssetStoreBuilder.build());
     }
 
     @Override
@@ -156,14 +170,23 @@ public class RoomsPlugin extends JavaPlugin {
     protected void shutdown() {
         LOGGER.atInfo().log("Shutting down RoomsPlugin!");
         config.save();
-        roomManager.save();
+        roomDataManager.saveAll();
     }
 
     public Config<PluginConfig> getConfig() {
         return this.config;
     }
 
-    public RoomManager getRoomManager() {
-        return roomManager.get();
+    public DataManager<UUID, RoomManager> getRoomDataManager() {
+        return roomDataManager;
+    }
+
+    public RoomManager getRoomManagerAndComputeIfAbsent(UUID worldUuid) {
+        Data<RoomManager> roomManagerData = roomDataManager.getDataAndComputeIfAbsent(worldUuid);
+        if (!roomManagerData.isLoaded()) {
+            LOGGER.atInfo().log("First room manager load for world: %s", worldUuid);
+            roomManagerData.load();
+        }
+        return roomManagerData.get();
     }
 }

@@ -25,7 +25,7 @@ public class RoomBlockType {
                     ((roomBlockType, parent) -> roomBlockType.blockIdPattern = parent.blockIdPattern)
             )
             .addValidator(Validators.nonNull())
-            .addValidator(new RegexValidator(BlockType.getAssetMap().getAssetMap().keySet()))
+            .addValidator(RegexValidator.BLOCK_TYPE_KEYS_VALIDATOR)
             .add()
             .appendInherited(new KeyedCodec<>("MinCount", Codec.INTEGER),
                     ((roomBlockType, s) -> roomBlockType.minCount = s),

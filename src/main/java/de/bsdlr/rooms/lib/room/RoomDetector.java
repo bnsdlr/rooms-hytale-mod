@@ -1,8 +1,10 @@
 package de.bsdlr.rooms.lib.room;
 
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.math.shape.Box;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.asset.type.blockhitbox.BlockBoundingBoxes;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -15,9 +17,11 @@ import de.bsdlr.rooms.lib.exceptions.UnknownBlockException;
 import de.bsdlr.rooms.lib.exceptions.WorldChunkNullException;
 import de.bsdlr.rooms.lib.room.block.RoomBlock;
 import de.bsdlr.rooms.lib.room.block.RoomBlockRole;
+import de.bsdlr.rooms.utils.BlockUtils;
 import de.bsdlr.rooms.utils.ChunkManager;
 import de.bsdlr.rooms.utils.PositionUtils;
 
+import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -124,15 +128,15 @@ public class RoomDetector {
         Set<Vector3i> visited = new HashSet<>();
         Room.Builder builder = new Room.Builder();
 
-        Deque<RoomBlock.Builder> queue = new ArrayDeque<>();
+        Deque<RoomBlock> queue = new ArrayDeque<>();
 
         Vector3i boundScanRadius = config.getBoundScanRadius();
 
         if (!isInRoom(chunkManager, boundScanRadius, x, y, z, overrideBlocks))
             throw new FailedToDetectRoomException("Could not detect room: no walls detected at source position");
 
-        RoomBlock.Builder start = chunkManager.getRoomBlockBuilderAt(x, y, z);
-        if (start.setAndGetRole().isRoomWall())
+        RoomBlock start = chunkManager.getRoomBlockAt(x, y, z);
+        if (start.getRole().isRoomWall())
             throw new FailedToDetectRoomException("Flood aborted: start position is in wall.");
 
         visited.add(start.getPos());
@@ -156,26 +160,24 @@ public class RoomDetector {
 
 //            LOGGER.atInfo().log("counter: %d", counter);
 
-            RoomBlock.Builder currentBuilder = queue.poll();
+            RoomBlock currentBlock = queue.poll();
 
-            if (currentBuilder.getY() < fixedMinY) continue;
-            else if (currentBuilder.getY() < minY) {
-                minY = currentBuilder.getY();
+            if (currentBlock.getY() < fixedMinY) continue;
+            else if (currentBlock.getY() < minY) {
+                minY = currentBlock.getY();
             }
 
-            if (currentBuilder.getY() > maxY) continue;
+            if (currentBlock.getY() > maxY) continue;
 
-            RoomBlock currentRoomBlock = currentBuilder.build();
-
-            builder.addBlock(currentRoomBlock);
+            builder.addBlock(currentBlock);
 
             for (Vector3i next : List.of(
-                    new Vector3i(currentRoomBlock.getX(), currentRoomBlock.getY() - 1, currentRoomBlock.getZ()),
-                    new Vector3i(currentRoomBlock.getX(), currentRoomBlock.getY() + 1, currentRoomBlock.getZ()),
-                    new Vector3i(currentRoomBlock.getX() - 1, currentRoomBlock.getY(), currentRoomBlock.getZ()),
-                    new Vector3i(currentRoomBlock.getX() + 1, currentRoomBlock.getY(), currentRoomBlock.getZ()),
-                    new Vector3i(currentRoomBlock.getX(), currentRoomBlock.getY(), currentRoomBlock.getZ() - 1),
-                    new Vector3i(currentRoomBlock.getX(), currentRoomBlock.getY(), currentRoomBlock.getZ() + 1)
+                    new Vector3i(currentBlock.getX(), currentBlock.getY() - 1, currentBlock.getZ()),
+                    new Vector3i(currentBlock.getX(), currentBlock.getY() + 1, currentBlock.getZ()),
+                    new Vector3i(currentBlock.getX() - 1, currentBlock.getY(), currentBlock.getZ()),
+                    new Vector3i(currentBlock.getX() + 1, currentBlock.getY(), currentBlock.getZ()),
+                    new Vector3i(currentBlock.getX(), currentBlock.getY(), currentBlock.getZ() - 1),
+                    new Vector3i(currentBlock.getX(), currentBlock.getY(), currentBlock.getZ() + 1)
 //                    new Vector3i(0, -1, 0),
 //                    new Vector3i(0,  1, 0),
 //                    new Vector3i(-1, 0, 0),
@@ -183,29 +185,46 @@ public class RoomDetector {
 //                    new Vector3i(0, 0, -1),
 //                    new Vector3i(0, 0,  1)
             )) {
-//                Vector3i next = new Vector3i(offset.x + currentRoomBlock.getX(), offset.y + currentRoomBlock.getY(), offset.z + currentRoomBlock.getZ());
+//                Vector3i next = new Vector3i(offset.x + currentBlock.getX(), offset.y + currentBlock.getY(), offset.z + currentBlock.getZ());
                 if (visited.contains(next)) continue;
                 if (next.y < fixedMinY || next.y > maxY || next.x < fixedMinX || next.x > fixedMaxX || next.z < fixedMinZ || next.z > fixedMaxZ)
                     continue;
 
-                RoomBlock.Builder blockBuilder = chunkManager.getRoomBlockBuilderAt(next);
+                RoomBlock block = null;
+                boolean set = false;
 
-                BlockType type = blockBuilder.setAndGetBlockType();
-                if (type == null) {
-                    LOGGER.atWarning().log("RoomBlock at %d %d %d is null!", next.x, next.y, next.z);
+                if (overrideBlocks != null) {
+                    long key = PositionUtils.encodePosition(next);
+                    if (overrideBlocks.containsKey(key)) {
+                        block = new RoomBlock(overrideBlocks.get(key), next, chunkManager.world.getChunkStore());
+                        set = true;
+                    }
+                }
+
+                if (!set) {
+                    block = chunkManager.getRoomBlockBuilderAt(next).setFiller(chunkManager.world.getChunkStore()).build();
+                }
+
+                if (block.getType().isUnknown()) {
+                    LOGGER.atWarning().log("RoomBlock at %d %d %d is unknown!", next.x, next.y, next.z);
                     continue;
                 }
 
-                RoomBlockRole role = blockBuilder.setAndGetRole();
+                RoomBlockRole role = block.getRole();
 
 //                LOGGER.atInfo().log("(%d) next: %d %d %d; role: %s; wall: %s", counter, next.x, next.y, next.z, role, role.isRoomWall());
                 if (role.isRoomWall()) {
-                    visited.add(blockBuilder.getPos());
-                    builder.addBlock(blockBuilder.build());
+//                    if (blockBuilder.isFiller()) {
+//                        addFillerBlocks(chunkManager, visited, builder, blockBuilder);
+//                    }
+
+                    if (visited.add(block.getPos())) {
+                        builder.addBlock(block);
+                    }
                     continue;
                 }
 
-                if (next.y != currentRoomBlock.getY()) {
+                if (next.y != currentBlock.getY()) {
                     if (!isInRoom(chunkManager, boundScanRadius, next.x, next.y, next.z, overrideBlocks)) {
                         int newMaxY = next.y - 1;
                         if (newMaxY < maxY) {
@@ -216,8 +235,8 @@ public class RoomDetector {
                     }
                 }
 
-                if (visited.add(blockBuilder.getPos())) {
-                    queue.add(blockBuilder);
+                if (visited.add(block.getPos())) {
+                    queue.add(block);
                 }
             }
         }
@@ -234,6 +253,56 @@ public class RoomDetector {
         return builder.build();
     }
 
+//    private static void addFillerBlocks(@Nonnull ChunkManager chunkManager, @Nonnull Set<Vector3i> visited, @Nonnull Room.Builder builder, @Nonnull RoomBlock.Builder blockBuilder) {
+//        Vector3i rootPos = BlockUtils.getRoot(blockBuilder.getFiller(), blockBuilder.getPos());
+//        BlockType type = blockBuilder.getAndSetBlockTypeIfNull();
+//
+//        if (type == null) {
+//            LOGGER.atWarning().log("BlockType is null!");
+//            return;
+//        }
+//
+//        BlockBoundingBoxes bbb = BlockBoundingBoxes.getAssetMap().getAsset(type.getHitboxTypeIndex());
+//        if (bbb == null) return;
+//
+////        int rotationIndex = chunkManager.world.getBlockRotationIndex(rootPos.x, rootPos.y, rootPos.z);
+//        LOGGER.atInfo().log("-----------------------------------------");
+//        CompletableFuture<Integer> future = new CompletableFuture<>();
+//
+//        chunkManager.world.execute(() -> {
+//            LOGGER.atInfo().log("waiting for rotation index");
+//            int index = chunkManager.getChunkAccessorFromBlock(rootPos.x, rootPos.z).getBlockRotationIndex(rootPos.x, rootPos.y, rootPos.z);
+//            LOGGER.atInfo().log("got rotation index, completing future");
+//            future.complete(index);
+//        });
+//
+//        try {
+//            LOGGER.atInfo().log("getting rotation index...");
+//            Integer rotationIndex = future.get();
+//            BlockBoundingBoxes.RotatedVariantBoxes rotatedHitbox = bbb.get(rotationIndex);
+//            Box bb = rotatedHitbox.getBoundingBox();
+//            LOGGER.atInfo().log("bounding box: %s", bb);
+//        } catch (Exception e) {
+//            LOGGER.atInfo().withCause(e).log();
+//        }
+//
+//        LOGGER.atInfo().log("-----------------------------------------");
+//
+////        int rotationIndex = chunkManager.getChunkAccessorFromBlock(rootPos.x, rootPos.z).getBlockRotationIndex(rootPos.x, rootPos.y, rootPos.z);
+//
+
+    /// /        LOGGER.atInfo().log("filler block pos: %d %d %d", blockBuilder.getX(), blockBuilder.getY(), blockBuilder.getZ());
+    /// /        LOGGER.atInfo().log("root block pos: %d %d %d", rootPos.x, rootPos.y, rootPos.z);
+    /// /        int blockId = chunkManager.getBlockIdAt(rootPos);
+    /// /        RoomBlock.Builder rootBlockBuilder = new RoomBlock.Builder(blockId, rootPos)
+    /// /                .setFiller(new Vector3i(0, 0, 0));
+    /// /        RoomBlockRole r = rootBlockBuilder.setAndGetRole();
+    /// /        LOGGER.atInfo().log("room block role: %s", r);
+    /// /
+    /// /        if (visited.add(rootPos)) {
+    /// /            builder.addBlock(rootBlockBuilder.build());
+    /// /        }
+//    }
     private static boolean isInRoom(ChunkManager chunkManager, Vector3i boundScanRadius, int x, int y, int z, Map<Long, BlockType> overrideBlocks) throws WorldChunkNullException {
         if (!detectRoomWall(chunkManager, boundScanRadius.x, x, y, z, 1, 0, overrideBlocks)) return false;
         if (!detectRoomWall(chunkManager, boundScanRadius.x, x, y, z, -1, 0, overrideBlocks)) return false;
@@ -242,7 +311,8 @@ public class RoomDetector {
     }
 
     private static boolean detectRoomWall(ChunkManager chunkManager, int boundScanRadius, int x, int y, int z, int offSetX, int offSetZ, Map<Long, BlockType> overrideBlocks) throws WorldChunkNullException {
-        if (offSetX == 0 && offSetZ == 0) return false;
+        if (offSetX == 0 && offSetZ == 0)
+            throw new RuntimeException("at least one of offSetX and offSetZ should not be 0.");
         int chunkX = ChunkUtil.chunkCoordinate(x);
         int chunkZ = ChunkUtil.chunkCoordinate(z);
         WorldChunk chunk = chunkManager.getChunk(chunkX, chunkZ);
@@ -270,7 +340,7 @@ public class RoomDetector {
                     chunk = chunkManager.getChunk(chunkX, chunkZ);
                 }
 
-                if (chunk == null) throw new WorldChunkNullException(currentChunkX, currentChunkZ);
+                if (chunk == null) throw new WorldChunkNullException(chunkX, chunkZ);
 
                 int blockId = chunk.getBlock(bx, y, bz);
                 if (blockId == BlockType.EMPTY_ID) continue;

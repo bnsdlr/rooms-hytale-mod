@@ -4,6 +4,7 @@ import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.accessor.ChunkAccessor;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import de.bsdlr.rooms.lib.room.block.RoomBlock;
 
@@ -17,6 +18,12 @@ public class ChunkManager {
     public ChunkManager(World world) {
         this.chunkMap = new HashMap<>();
         this.world = world;
+    }
+
+    public ChunkAccessor getChunkAccessorFromBlock(int blockX, int blockZ) {
+        WorldChunk chunk = getChunkFromBlock(blockX, blockZ);
+        if (chunk == null) return null;
+        return chunk.getChunkAccessor();
     }
 
     public WorldChunk getChunkFromBlock(int blockX, int blockZ) {
@@ -63,8 +70,17 @@ public class ChunkManager {
     public RoomBlock.Builder getRoomBlockBuilderAt(Vector3i vec) {
         WorldChunk chunk = this.getChunkFromBlock(vec.x, vec.z);
         int blockId = chunk.getBlock(vec.x, vec.y, vec.z);
+        BlockType type = BlockType.getAssetMap().getAsset(blockId);
 
-        return new RoomBlock.Builder(blockId, vec);
+        return new RoomBlock.Builder(type == null ? BlockType.UNKNOWN : type, vec);
+    }
+
+    public RoomBlock getRoomBlockAt(int x, int y, int z) {
+        return getRoomBlockAt(new Vector3i(x, y, z));
+    }
+
+    public RoomBlock getRoomBlockAt(Vector3i vec) {
+        return getRoomBlockBuilderAt(vec).setFiller(world.getChunkStore()).build();
     }
 
     public static WorldChunk loadChunk(World world, long index) {

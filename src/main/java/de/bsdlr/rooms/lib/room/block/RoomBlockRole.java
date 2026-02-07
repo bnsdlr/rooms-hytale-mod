@@ -5,36 +5,30 @@ import com.hypixel.hytale.protocol.DrawType;
 import com.hypixel.hytale.protocol.Opacity;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 
+import javax.annotation.Nonnull;
+
 public enum RoomBlockRole {
     ENTRANCE,
     SOLID,
     EMPTY,
     FURNITURE,
     WINDOW,
-    NONE;
+    UNKNOWN;
 
     public boolean isRoomWall() {
         return this == RoomBlockRole.WINDOW || this == RoomBlockRole.ENTRANCE || this == RoomBlockRole.SOLID;
     }
 
-    private static BlockType blockType(int blockId) {
-        return BlockType.getAssetMap().getAsset(blockId);
-    }
-
-    public static RoomBlockRole getRole(int blockId) {
-        return getRole(blockId, blockType(blockId));
-    }
-
-    public static RoomBlockRole getRole(int blockId, BlockType type) {
-        if (blockId == 0) return RoomBlockRole.EMPTY;
-        if (type == null) return RoomBlockRole.NONE;
+    public static RoomBlockRole getRole(BlockType type) {
+        if (type == null || type.isUnknown()) return RoomBlockRole.UNKNOWN;
+        if (type.getId().equals(BlockType.EMPTY_KEY)) return RoomBlockRole.EMPTY;
 
         if (isRoomWallBlock(type)) return RoomBlockRole.SOLID;
         if (isEntrance(type)) return RoomBlockRole.ENTRANCE;
         if (isWindow(type)) return RoomBlockRole.WINDOW;
         if (isFurniture(type)) return RoomBlockRole.FURNITURE;
         if (isSolidBlock(type)) return RoomBlockRole.SOLID;
-        else return RoomBlockRole.NONE;
+        else return RoomBlockRole.UNKNOWN;
     }
 
     public static boolean isFurniture(BlockType type) {

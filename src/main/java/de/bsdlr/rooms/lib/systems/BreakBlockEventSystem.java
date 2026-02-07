@@ -15,18 +15,13 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import de.bsdlr.rooms.RoomsPlugin;
-import de.bsdlr.rooms.lib.exceptions.FailedToDetectRoomException;
-import de.bsdlr.rooms.lib.room.Room;
 import de.bsdlr.rooms.lib.room.RoomDetector;
-import de.bsdlr.rooms.lib.room.RoomManager;
 import de.bsdlr.rooms.utils.PositionUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 public class BreakBlockEventSystem extends EntityEventSystem<EntityStore, BreakBlockEvent> {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
@@ -49,9 +44,14 @@ public class BreakBlockEventSystem extends EntityEventSystem<EntityStore, BreakB
         }
 
         Map<Long, BlockType> overrideBlocks = new HashMap<>();
-        overrideBlocks.put(PositionUtils.encodePosition(target), BlockType.EMPTY);
+        long key = PositionUtils.encodePosition(target);
+        overrideBlocks.put(key, BlockType.EMPTY);
 
-        RoomsPlugin.get().getRoomManager().updateAround(world, target, overrideBlocks);
+        LOGGER.atInfo().log("decoded block pos: %d %d %d", PositionUtils.decodeX(key), PositionUtils.decodeY(key), PositionUtils.decodeZ(key));
+
+        RoomDetector.setSilent(true);
+        RoomsPlugin.get().getRoomManagerAndComputeIfAbsent(world.getWorldConfig().getUuid()).updateAround(world, target, overrideBlocks);
+        RoomDetector.restoreSilent();
 
 //        Vector3i scanRadius = RoomsPlugin.get().getConfig().get().getScanRadius();
 //

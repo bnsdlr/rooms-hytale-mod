@@ -35,7 +35,7 @@ public class DetectCommand extends AbstractPlayerCommand {
                 ctx.sendMessage(Message.raw("No rooms detected."));
                 return;
             }
-            RoomManager roomManager = RoomsPlugin.get().getRoomManager();
+            RoomManager roomManager = RoomsPlugin.get().getRoomManagerAndComputeIfAbsent(world.getWorldConfig().getUuid());
 
             for (Room room : rooms) {
                 roomManager.addRoom(room);

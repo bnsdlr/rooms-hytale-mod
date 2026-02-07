@@ -9,13 +9,10 @@
     },
     {
       "BlockIdPattern": {
-        "Pattern": ".*Torch*."
+        "Pattern": ".*Torch.*"
       }
     }
   ],
   "AdditionalScore": 10,
-  "Quality": "Common",
-  "PreferredWallBlocks": [
-    {}
-  ]
+  "Quality": "Common"
 }
