@@ -5,27 +5,25 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.validation.ValidatorCache;
 import com.hypixel.hytale.codec.validation.Validators;
+import com.hypixel.hytale.common.util.StringUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import de.bsdlr.rooms.lib.asset.regex.Regex;
-import de.bsdlr.rooms.lib.asset.regex.RegexValidator;
+import de.bsdlr.rooms.lib.asset.pattern.PatternValidator;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class RoomBlockType {
     protected static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     public static final BuilderCodec<RoomBlockType> CODEC = BuilderCodec.builder(RoomBlockType.class, RoomBlockType::new)
-            .appendInherited(new KeyedCodec<>("BlockIdPattern", Regex.CODEC),
+            .appendInherited(new KeyedCodec<>("BlockIdPattern", Codec.STRING),
                     ((roomBlockType, s) -> roomBlockType.blockIdPattern = s),
                     (roomBlockType -> roomBlockType.blockIdPattern),
                     ((roomBlockType, parent) -> roomBlockType.blockIdPattern = parent.blockIdPattern)
             )
             .addValidator(Validators.nonNull())
-            .addValidator(RegexValidator.BLOCK_TYPE_KEYS_VALIDATOR)
+            .addValidator(PatternValidator.BLOCK_TYPE_KEYS_VALIDATOR)
             .add()
             .appendInherited(new KeyedCodec<>("MinCount", Codec.INTEGER),
                     ((roomBlockType, s) -> roomBlockType.minCount = s),
@@ -44,7 +42,7 @@ public class RoomBlockType {
             .build();
     public static final ValidatorCache<RoomBlockType> VALIDATOR_CACHE = new ValidatorCache<>(new RoomBlockTypeValidator());
     @Nonnull
-    protected Regex blockIdPattern = new Regex("", null);
+    protected String blockIdPattern = "*";
     protected int minCount = 1;
     protected int maxCount = Integer.MAX_VALUE;
 
@@ -61,13 +59,11 @@ public class RoomBlockType {
     }
 
     @Nonnull
-    public static List<String> getMatchingBlockIds(@Nonnull Regex blockIdPattern) {
+    public static List<String> getMatchingBlockIds(@Nonnull String blockIdPattern) {
         List<String> matchingBlockIds = new ArrayList<>();
-        Pattern pattern = blockIdPattern.getCompiledPattern();
 
         for (String blockId : BlockType.getAssetMap().getAssetMap().keySet()) {
-            Matcher matcher = pattern.matcher(blockId);
-            if (matcher.find()) {
+            if (StringUtil.isGlobMatching(blockIdPattern, blockId)) {
                 matchingBlockIds.add(blockId);
             }
         }
@@ -90,7 +86,7 @@ public class RoomBlockType {
     }
 
     @Nonnull
-    public Regex getBlockIdPattern() {
+    public String getBlockIdPattern() {
         return blockIdPattern;
     }
 

@@ -1,7 +1,6 @@
 package de.bsdlr.rooms.lib.asset.score;
 
 import com.hypixel.hytale.assetstore.AssetExtraInfo;
-import com.hypixel.hytale.assetstore.AssetKeyValidator;
 import com.hypixel.hytale.assetstore.AssetRegistry;
 import com.hypixel.hytale.assetstore.AssetStore;
 import com.hypixel.hytale.assetstore.codec.AssetBuilderCodec;
@@ -9,14 +8,8 @@ import com.hypixel.hytale.assetstore.map.IndexedLookupTableAssetMap;
 import com.hypixel.hytale.assetstore.map.JsonAssetWithMap;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
-import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
-import com.hypixel.hytale.codec.validation.ValidatorCache;
 import com.hypixel.hytale.codec.validation.validator.ArrayValidator;
-import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import de.bsdlr.rooms.lib.asset.regex.AdvancedRegex;
-import de.bsdlr.rooms.lib.asset.regex.AdvancedRegexValidator;
-import de.bsdlr.rooms.lib.asset.regex.Regex;
-import de.bsdlr.rooms.lib.asset.regex.RegexValidator;
+import de.bsdlr.rooms.lib.asset.pattern.PatternValidator;
 
 import javax.annotation.Nonnull;
 
@@ -44,30 +37,50 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
             )
             .documentation("If enabled ignores includes and only uses excludes.")
             .add()
-            .appendInherited(new KeyedCodec<>("IncludeBlockTypes", new ArrayCodec<>(Regex.CODEC, Regex[]::new)),
+            .appendInherited(new KeyedCodec<>("IncludeBlockTypes", Codec.STRING_ARRAY),
                     (scoreGroup, s) -> scoreGroup.includeBlockTypes = s,
                     scoreGroup -> scoreGroup.includeBlockTypes,
                     (scoreGroup, parent) -> scoreGroup.includeBlockTypes = parent.includeBlockTypes
             )
             .documentation("Defines blocks that should be in the group.")
-            .addValidator(new ArrayValidator<>(RegexValidator.BLOCK_TYPE_KEYS_VALIDATOR))
+            .addValidator(new ArrayValidator<>(PatternValidator.BLOCK_TYPE_KEYS_VALIDATOR))
             .add()
-            .appendInherited(new KeyedCodec<>("ExcludeBlockTypes", new ArrayCodec<>(Regex.CODEC, Regex[]::new)),
+            .appendInherited(new KeyedCodec<>("ExcludeBlockTypes", Codec.STRING_ARRAY),
                     (scoreGroup, s) -> scoreGroup.excludeBlockTypes = s,
                     scoreGroup -> scoreGroup.excludeBlockTypes,
                     (scoreGroup, parent) -> scoreGroup.excludeBlockTypes = parent.excludeBlockTypes
             )
             .documentation("Defines blocks that should NOT be in the group.")
-            .addValidator(new ArrayValidator<>(RegexValidator.BLOCK_TYPE_KEYS_VALIDATOR))
+            .addValidator(new ArrayValidator<>(PatternValidator.BLOCK_TYPE_KEYS_VALIDATOR))
             .add()
+//            .appendInherited(
+//                    new KeyedCodec<>("IncludeCategories", new ArrayCodec<>(Codec.STRING_ARRAY, String[][]::new)),
+//                    (scoreGroup, s) -> scoreGroup.includeCategories = s,
+//                    scoreGroup -> scoreGroup.includeCategories,
+//                    ((scoreGroup, parent) -> scoreGroup.includeCategories = parent.includeCategories)
+//            )
+//            .add()
+//            .appendInherited(
+//                    new KeyedCodec<>("ExcludeCategories", new ArrayCodec<>(Codec.STRING_ARRAY, String[][]::new)),
+//                    (scoreGroup, s) -> scoreGroup.excludeCategories = s,
+//                    scoreGroup -> scoreGroup.excludeCategories,
+//                    ((scoreGroup, parent) -> scoreGroup.excludeCategories = parent.excludeCategories)
+//            )
+//            .add()
             .build();
     private static AssetStore<String, ScoreGroup, IndexedLookupTableAssetMap<String, ScoreGroup>> ASSET_STORE;
     protected String id;
     protected AssetExtraInfo.Data data;
     protected Score score;
     protected boolean includeAll;
-    protected Regex[] includeBlockTypes;
-    protected Regex[] excludeBlockTypes;
+    protected String[] includeBlockTypes;
+    protected String[] excludeBlockTypes;
+//    protected String[] includeBlockGroups;
+//    protected String[] excludeBlockGroups;
+//    protected String[] includeHitboxTypes;
+//    protected String[] excludeHitboxTypes;
+//    protected String[][] includeCategories;
+//    protected String[][] excludeCategories;
 
     @Nonnull
     public static AssetStore<String, ScoreGroup, IndexedLookupTableAssetMap<String, ScoreGroup>> getAssetStore() {
@@ -107,8 +120,19 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
         return score;
     }
 
-    @Nonnull
-    public Regex[] getIncludeBlockTypes() {
+    public AssetExtraInfo.Data getData() {
+        return data;
+    }
+
+    public boolean isIncludeAll() {
+        return includeAll;
+    }
+
+    public String[] getIncludeBlockTypes() {
         return includeBlockTypes;
+    }
+
+    public String[] getExcludeBlockTypes() {
+        return excludeBlockTypes;
     }
 }

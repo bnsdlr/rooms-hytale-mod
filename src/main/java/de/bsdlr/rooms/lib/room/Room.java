@@ -10,6 +10,8 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
+import de.bsdlr.rooms.lib.asset.score.Score;
+import de.bsdlr.rooms.lib.asset.score.ScoreGroup;
 import de.bsdlr.rooms.lib.exceptions.FailedToDetectRoomException;
 import de.bsdlr.rooms.lib.room.block.RoomBlock;
 import de.bsdlr.rooms.lib.room.block.RoomBlockRole;
@@ -184,8 +186,7 @@ public class Room {
         }
 
         @Nonnull
-        private List<RoomType> findMatchingRoomTypes(int area) {
-            Map<String, Integer> blockId2Count = getBlockId2Count();
+        private List<RoomType> findMatchingRoomTypes(int area, Map<String, Integer> blockId2Count) {
             List<RoomType> matching = new ArrayList<>();
 
             for (RoomType type : RoomType.getAssetMap().getAssetMap().values()) {
@@ -217,8 +218,8 @@ public class Room {
         }
 
         @Nonnull
-        private RoomType findRoomType(int area) {
-            List<RoomType> matching = findMatchingRoomTypes(area);
+        private RoomType findRoomType(int area, Map<String, Integer> blockId2Count) {
+            List<RoomType> matching = findMatchingRoomTypes(area, blockId2Count);
             if (matching.isEmpty()) return RoomType.DEFAULT;
             if (matching.size() == 1) return matching.getFirst();
 
@@ -246,19 +247,24 @@ public class Room {
         }
 
         // TODO: improve this...
-        private int calculateScore() {
+        private int calculateScore(Map<String, Integer> blockId2Count) {
             int score = 0;
 
-            for (RoomBlock roomBlock : blocks) {
-                if (roomBlock.getType().isUnknown()) continue;
-                if (roomBlock.getType().getId().equals(BlockType.EMPTY_KEY)) continue;
-                if (roomBlock.getRole() == RoomBlockRole.UNKNOWN) continue;
+            for (Map.Entry<String, Integer> entry : blockId2Count.entrySet()) {
+                BlockType type = BlockType.getAssetMap().getAsset(entry.getKey());
+                if (type.isUnknown()) continue;
+                if (type.getId().equals(BlockType.EMPTY_KEY)) continue;
+
+                for (ScoreGroup group : ScoreGroup.getAssetMap().getAssetMap().values()) {
+                }
+
                 switch (roomBlock.getRole()) {
                     case SOLID -> score += 5;
                     case FURNITURE -> score += 20;
                     case ENTRANCE -> score += 50;
                     case WINDOW -> score += 10;
                 }
+
                 if (roomBlock.getType().getLight() != null) {
                     score += 5;
                 }
@@ -306,10 +312,11 @@ public class Room {
                 throw new FailedToDetectRoomException("Could not build room: room has no light source");
 
             int area = findArea();
-            RoomType type = findRoomType(area);
+            Map<String, Integer> blockId2Count = getBlockId2Count();
+            RoomType type = findRoomType(area, blockId2Count);
             String id = type.getId() == null ? "Room" : type.getId();
 
-            return new Room(id, worldUuid, calculateScore(), getEncodedBlocks());
+            return new Room(id, worldUuid, calculateScore(blockId2Count), getEncodedBlocks());
         }
     }
 }

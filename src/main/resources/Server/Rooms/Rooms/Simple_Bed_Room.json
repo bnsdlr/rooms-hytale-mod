@@ -3,14 +3,10 @@
     {
       "BlockId": "Furniture_Crude_Bed",
       "MinCount": 2,
-      "BlockIdPattern": {
-        "Pattern": ".*Bed.*"
-      }
+      "BlockIdPattern": "*Bed*"
     },
     {
-      "BlockIdPattern": {
-        "Pattern": ".*Torch.*"
-      }
+      "BlockIdPattern": "*Torch*"
     }
   ],
   "AdditionalScore": 10,

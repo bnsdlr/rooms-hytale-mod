@@ -1,0 +1,51 @@
+package de.bsdlr.rooms.lib.asset.pattern;
+
+import com.hypixel.hytale.codec.schema.SchemaContext;
+import com.hypixel.hytale.codec.schema.config.Schema;
+import com.hypixel.hytale.codec.validation.ValidationResults;
+import com.hypixel.hytale.codec.validation.Validator;
+import com.hypixel.hytale.common.util.StringUtil;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
+
+import javax.annotation.Nonnull;
+import java.util.Set;
+
+public class PatternValidator implements Validator<String> {
+    public static final PatternValidator BLOCK_TYPE_KEYS_VALIDATOR = new PatternValidator(BlockType.getAssetMap().getAssetMap().keySet(), "Pattern doesn't match any existing block id.");
+    @Nonnull
+    private final Set<String> options;
+    private final String noMatchError;
+
+    public PatternValidator(@Nonnull Set<String> options) {
+        this.options = options;
+        this.noMatchError = null;
+    }
+
+    public PatternValidator(@Nonnull Set<String> options, String noMatchError) {
+        this.options = options;
+        this.noMatchError = noMatchError;
+    }
+
+    @Override
+    public void accept(String pattern, ValidationResults results) {
+        if (pattern.isBlank()) results.fail("Pattern is blank (empty or only whitespace).");
+        boolean anyMatch = false;
+
+        for (String option : options) {
+            if (StringUtil.isGlobMatching(pattern, option)) {
+                anyMatch = true;
+                break;
+            }
+        }
+
+        if (!anyMatch) {
+            if (noMatchError != null) results.fail(noMatchError);
+            else results.fail("Pattern doesn't match any existing option.");
+        }
+    }
+
+    @Override
+    public void updateSchema(SchemaContext schemaContext, Schema schema) {
+
+    }
+}
