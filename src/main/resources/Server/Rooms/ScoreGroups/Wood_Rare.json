@@ -1,0 +1,9 @@
+{
+  "Score": 25,
+  "IncludeBlockTypes": [
+    "Wood_Goldenwood*",
+    "Wood_Blackwood*",
+    "Wood_Crystal*",
+    "Wood_Hardwood*"
+  ]
+}

@@ -15,7 +15,6 @@ import com.hypixel.hytale.protocol.Color;
 import de.bsdlr.rooms.config.PluginConfig;
 import de.bsdlr.rooms.lib.asset.AssetMapWithGroup;
 import de.bsdlr.rooms.lib.asset.quality.Quality;
-import de.bsdlr.rooms.lib.asset.score.Score;
 import de.bsdlr.rooms.lib.room.block.PreferredBlockType;
 import de.bsdlr.rooms.lib.room.block.RoomBlockType;
 import de.bsdlr.rooms.lib.set.FurnitureSetType;
@@ -89,7 +88,7 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
             .addValidator(Quality.VALIDATOR_CACHE.getValidator())
             .documentation("Ignore the error... don't know how to prevent it...")
             .add()
-            .appendInherited(new KeyedCodec<>("Score", Score.CODEC),
+            .appendInherited(new KeyedCodec<>("Score", Codec.INTEGER),
                     (roomType, s) -> roomType.score = s,
                     roomType -> roomType.score,
                     (roomType, parent) -> roomType.score = parent.score)
@@ -99,6 +98,15 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
                     roomType -> roomType.minArea,
                     (roomType, parent) -> roomType.minArea = parent.minArea)
             .addValidator(Validators.min(1))
+            .add()
+            .appendInherited(new KeyedCodec<>("RoomSizeIds", new ArrayCodec<>(Codec.STRING, String[]::new)),
+                    ((roomType, s) -> roomType.roomSizeIds = s),
+                    (roomType -> roomType.roomSizeIds),
+                    ((roomType, parent) -> roomType.roomSizeIds = parent.roomSizeIds)
+            )
+            .documentation("If no room sizes are selected it will default to all (select normal if you want no prefix...).")
+            .addValidator(RoomSize.VALIDATOR_CACHE.getArrayValidator())
+            .addValidator(Validators.nonNullArrayElements())
             .add()
             .build();
     public static final String DEFAULT_KEY = "Room";
@@ -122,7 +130,8 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
     protected String[] setIds;
     protected String group;
     protected String qualityId = Quality.DEFAULT_ID;
-    protected Score score;
+    protected String[] roomSizeIds = RoomSize.getAssetMap().getAssetMap().keySet().toArray(new String[0]);
+    protected int score;
     protected int minArea = 1;
 
     @Nullable
@@ -160,6 +169,7 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
         this.preferredFloorBlocks = other.preferredFloorBlocks;
         this.setIds = other.setIds;
         this.icon = other.icon;
+        this.roomSizeIds = other.roomSizeIds;
         this.group = other.group;
         this.qualityId = other.qualityId;
         this.score = other.score;
@@ -215,7 +225,7 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
         return preferredFloorBlocks;
     }
 
-    public Score getScore() {
+    public int getScore() {
         return score;
     }
 
@@ -225,6 +235,10 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
 
     public int getMinArea() {
         return minArea;
+    }
+
+    public String[] getRoomSizeIds() {
+        return roomSizeIds;
     }
 
     public Quality getQualityOrDefault(Quality defaultVal) {
@@ -265,11 +279,13 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
         if (q1.getQualityValue() > q2.getQualityValue()) return o1;
         if (o1.roomBlocks.length < o2.roomBlocks.length) return o2;
         if (o1.roomBlocks.length > o2.roomBlocks.length) return o1;
-        if (o1.score.getMultiplier() < o2.score.getMultiplier()) return o2;
-        if (o1.score.getMultiplier() > o2.score.getMultiplier()) return o1;
-        if (o1.score.getAddBefore() < o2.score.getAddBefore()) return o2;
-        if (o1.score.getAddBefore() > o2.score.getAddBefore()) return o1;
-        if (o1.score.getAddAfter() < o2.score.getAddAfter()) return o2;
+        if (o1.score < o2.score) return o2;
         return o1;
+//        if (o1.score.getMultiplier() < o2.score.getMultiplier()) return o2;
+//        if (o1.score.getMultiplier() > o2.score.getMultiplier()) return o1;
+//        if (o1.score.getAddBefore() < o2.score.getAddBefore()) return o2;
+//        if (o1.score.getAddBefore() > o2.score.getAddBefore()) return o1;
+//        if (o1.score.getAddAfter() < o2.score.getAddAfter()) return o2;
+//        return o1;
     }
 }

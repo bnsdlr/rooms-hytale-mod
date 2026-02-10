@@ -1,7 +1,6 @@
 {
   "Score": 5,
   "IncludeBlockTypes": [
-    "Wood_*_Planks*",
-    "Wood_*_Fence*"
+    "Rock_*_Cobble*"
   ]
 }

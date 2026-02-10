@@ -9,6 +9,8 @@ import com.hypixel.hytale.assetstore.map.JsonAssetWithMap;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.validation.validator.ArrayValidator;
+import com.hypixel.hytale.common.util.StringUtil;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import de.bsdlr.rooms.lib.asset.pattern.PatternValidator;
 
 import javax.annotation.Nonnull;
@@ -23,7 +25,7 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
                     (scoreGroup, data) -> scoreGroup.data = data,
                     scoreGroup -> scoreGroup.data
             )
-            .appendInherited(new KeyedCodec<>("Score", Score.CODEC),
+            .appendInherited(new KeyedCodec<>("Score", Codec.INTEGER),
                     (scoreGroup, s) -> scoreGroup.score = s,
                     scoreGroup -> scoreGroup.score,
                     (scoreGroup, parent) -> scoreGroup.score = parent.score
@@ -71,10 +73,12 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
     private static AssetStore<String, ScoreGroup, IndexedLookupTableAssetMap<String, ScoreGroup>> ASSET_STORE;
     protected String id;
     protected AssetExtraInfo.Data data;
-    protected Score score;
+    protected int score;
     protected boolean includeAll;
-    protected String[] includeBlockTypes;
-    protected String[] excludeBlockTypes;
+    @Nonnull
+    protected String[] includeBlockTypes = new String[0];
+    @Nonnull
+    protected String[] excludeBlockTypes = new String[0];
 //    protected String[] includeBlockGroups;
 //    protected String[] excludeBlockGroups;
 //    protected String[] includeHitboxTypes;
@@ -110,13 +114,35 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
         this.includeBlockTypes = other.includeBlockTypes;
     }
 
+    public boolean matches(BlockType type) {
+        boolean includeMatches = includeAll;
+        boolean excludeMatches = false;
+
+        if (!includeAll) {
+            for (String pattern : includeBlockTypes) {
+                if (StringUtil.isGlobMatching(pattern, type.getId())) {
+                    includeMatches = true;
+                    break;
+                }
+            }
+        }
+
+        for (String pattern : excludeBlockTypes) {
+            if (StringUtil.isGlobMatching(pattern, type.getId())) {
+                excludeMatches = true;
+                break;
+            }
+        }
+
+        return includeMatches && !excludeMatches;
+    }
+
     @Override
     public String getId() {
         return id;
     }
 
-    @Nonnull
-    public Score getScore() {
+    public int getScore() {
         return score;
     }
 

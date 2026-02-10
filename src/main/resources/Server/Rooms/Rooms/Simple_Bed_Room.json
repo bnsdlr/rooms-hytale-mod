@@ -10,5 +10,7 @@
     }
   ],
   "AdditionalScore": 10,
-  "Quality": "Common"
+  "Quality": "Common",
+  "RoomSizes": [
+  ]
 }

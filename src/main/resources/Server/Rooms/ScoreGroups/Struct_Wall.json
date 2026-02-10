@@ -1,5 +1,6 @@
 {
+  "Score": 10,
   "IncludeBlockTypes": [
-    "Wood_*_Trunk"
+    "*_Wall*"
   ]
 }

@@ -3,22 +3,22 @@ package de.bsdlr.rooms;
 import com.hypixel.hytale.assetstore.map.IndexedLookupTableAssetMap;
 import com.hypixel.hytale.component.ComponentRegistryProxy;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.protocol.packets.setup.WorldLoadFinished;
 import com.hypixel.hytale.server.core.HytaleServer;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.HytaleAssetStore;
-import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSystem;
-import com.hypixel.hytale.server.core.io.adapter.PacketAdapters;
-import com.hypixel.hytale.server.core.io.adapter.PacketWatcher;
+import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.Config;
 import de.bsdlr.rooms.commands.*;
 import de.bsdlr.rooms.config.PluginConfig;
 import de.bsdlr.rooms.lib.asset.quality.Quality;
 import de.bsdlr.rooms.lib.asset.score.ScoreGroup;
+import de.bsdlr.rooms.lib.exceptions.AssetValidationException;
 import de.bsdlr.rooms.lib.room.RoomManager;
+import de.bsdlr.rooms.lib.room.RoomSize;
 import de.bsdlr.rooms.lib.room.RoomType;
 import de.bsdlr.rooms.lib.set.FurnitureSetType;
 import de.bsdlr.rooms.lib.asset.AssetMapWithGroup;
@@ -29,7 +29,10 @@ import de.bsdlr.rooms.lib.systems.PlaceBlockEventSystem;
 import de.bsdlr.rooms.ui.HudComponent;
 import de.bsdlr.rooms.ui.HudManager;
 
+import java.awt.*;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -116,6 +119,15 @@ public class RoomsPlugin extends JavaPlugin {
 //                }
 //        );
 
+        // RoomSize Asset Store
+        HytaleAssetStore.Builder<String, RoomSize, IndexedLookupTableAssetMap<String, RoomSize>> roomSizeAssetStoreBuilder = HytaleAssetStore.builder(RoomSize.class, new IndexedLookupTableAssetMap<>(RoomSize[]::new));
+        roomSizeAssetStoreBuilder.setPath("Rooms/RoomSizes");
+        roomSizeAssetStoreBuilder.setCodec(RoomSize.CODEC);
+        roomSizeAssetStoreBuilder.setKeyFunction(RoomSize::getId);
+        roomSizeAssetStoreBuilder.setReplaceOnRemove(RoomSize::new);
+        roomSizeAssetStoreBuilder.preLoadAssets(Collections.singletonList(RoomSize.DEFAULT));
+        this.getAssetRegistry().register(roomSizeAssetStoreBuilder.build());
+
         // ScoreGroups Asset Store
         HytaleAssetStore.Builder<String, ScoreGroup, IndexedLookupTableAssetMap<String, ScoreGroup>> scoreGroupAssetStoreBuilder = HytaleAssetStore.builder(ScoreGroup.class, new IndexedLookupTableAssetMap<>(ScoreGroup[]::new));
         scoreGroupAssetStoreBuilder.setPath("Rooms/ScoreGroups");
@@ -129,7 +141,6 @@ public class RoomsPlugin extends JavaPlugin {
         qualityAssetStoreBuilder.setPath("Rooms/Qualities");
         qualityAssetStoreBuilder.setCodec(Quality.CODEC);
         qualityAssetStoreBuilder.setKeyFunction(Quality::getId);
-//        qualityAssetStoreBuilder.loadsAfter(ParticleSystem.class);
         qualityAssetStoreBuilder.setReplaceOnRemove(Quality::new);
         qualityAssetStoreBuilder.preLoadAssets(Collections.singletonList(Quality.DEFAULT_QUALITY));
         this.getAssetRegistry().register(qualityAssetStoreBuilder.build());
@@ -150,7 +161,7 @@ public class RoomsPlugin extends JavaPlugin {
         roomTypeAssetStoreBuilder.setPath("Rooms/Rooms");
         roomTypeAssetStoreBuilder.setCodec(RoomType.CODEC);
         roomTypeAssetStoreBuilder.setKeyFunction(RoomType::getId);
-        roomTypeAssetStoreBuilder.loadsAfter(FurnitureSetType.class);
+        roomTypeAssetStoreBuilder.loadsAfter(FurnitureSetType.class, Quality.class, RoomSize.class);
         roomTypeAssetStoreBuilder.setReplaceOnRemove(RoomType::getUnknownFor);
         roomTypeAssetStoreBuilder.preLoadAssets(Collections.singletonList(RoomType.DEFAULT));
 //        roomTypeAssetStoreBuilder.setPacketGenerator(new RoomTypePacketGenerator());
@@ -162,8 +173,24 @@ public class RoomsPlugin extends JavaPlugin {
     @Override
     protected void start() {
         LOGGER.atInfo().log("Plugin starting!");
+        List<AssetValidationException> assetValidationExceptionList = RoomSize.validateAllAssets();
+
+        this.getEventRegistry().register(
+                PlayerConnectEvent.class,
+                event -> {
+                    PlayerRef playerRef = event.getPlayerRef();
+                    if (playerRef == null || !playerRef.isValid()) return;
+                    for (AssetValidationException e : assetValidationExceptionList) {
+                        playerRef.sendMessage(Message.raw(e.getMessage()).color(Color.RED));
+                    }
+                }
+        );
 
         HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(HudManager::handle, 300, 300, TimeUnit.MILLISECONDS);
+
+        for (RoomType type : RoomType.getAssetMap().getAssetMap().values()) {
+            LOGGER.atInfo().log("%s: %s", type.getId(), Arrays.toString(type.getRoomSizeIds()));
+        }
     }
 
     @Override
@@ -171,6 +198,19 @@ public class RoomsPlugin extends JavaPlugin {
         LOGGER.atInfo().log("Shutting down RoomsPlugin!");
         config.save();
         roomDataManager.saveAll();
+
+//        StringBuilder builder = new StringBuilder();
+//
+//        for (String key : BlockType.getAssetMap().getAssetMap().keySet()) {
+//            builder.append(key);
+//            builder.append("\n");
+//        }
+//
+//        try {
+//            Files.writeString(this.getDataDirectory().resolve("blockIds.txt"), builder.toString());
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
     }
 
     public Config<PluginConfig> getConfig() {

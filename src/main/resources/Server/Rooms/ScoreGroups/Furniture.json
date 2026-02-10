@@ -1,0 +1,8 @@
+{
+  "Score": 20,
+  "IncludeBlockTypes": [
+    "Furniture_*_Chair*",
+    "Furniture_*_Table*",
+    "Furniture_*_Bench*"
+  ]
+}

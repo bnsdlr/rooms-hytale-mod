@@ -8,7 +8,6 @@ import com.hypixel.hytale.common.util.StringUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import de.bsdlr.rooms.lib.asset.pattern.PatternValidator;
-import de.bsdlr.rooms.lib.asset.score.Score;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -25,7 +24,7 @@ public class PreferredBlockType {
             .addValidator(Validators.nonNull())
             .addValidator(PatternValidator.BLOCK_TYPE_KEYS_VALIDATOR)
             .add()
-            .appendInherited(new KeyedCodec<>("Score", Score.CODEC),
+            .appendInherited(new KeyedCodec<>("Score", Codec.INTEGER),
                     ((preferredBlockType, s) -> preferredBlockType.score = s),
                     (preferredBlockType -> preferredBlockType.score),
                     ((preferredBlockType, parent) -> preferredBlockType.score = parent.score)
@@ -35,8 +34,7 @@ public class PreferredBlockType {
             .build();
     @Nonnull
     protected String blockIdPattern = "*";
-    @Nonnull
-    protected Score score = new Score();
+    protected int score = 0;
 
     private String[] blockIds;
 
@@ -84,8 +82,7 @@ public class PreferredBlockType {
         return blockIdPattern;
     }
 
-    @Nonnull
-    public Score getScore() {
+    public int getScore() {
         return score;
     }
 }

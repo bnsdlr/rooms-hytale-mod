@@ -1,0 +1,6 @@
+{
+  "Score": 15,
+  "IncludeBlockTypes": [
+    "Rock_*_Brick*"
+  ]
+}

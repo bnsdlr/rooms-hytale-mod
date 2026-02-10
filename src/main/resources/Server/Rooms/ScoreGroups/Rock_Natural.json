@@ -1,0 +1,9 @@
+{
+  "Score": 0,
+  "IncludeBlockTypes": [
+    "Rock_Stone*",
+    "Rock_Shale*",
+    "Rock_Lime*",
+    "Rock_Sandstone*"
+  ]
+}

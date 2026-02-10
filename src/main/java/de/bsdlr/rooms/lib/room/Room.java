@@ -10,7 +10,6 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
-import de.bsdlr.rooms.lib.asset.score.Score;
 import de.bsdlr.rooms.lib.asset.score.ScoreGroup;
 import de.bsdlr.rooms.lib.exceptions.FailedToDetectRoomException;
 import de.bsdlr.rooms.lib.room.block.RoomBlock;
@@ -252,21 +251,14 @@ public class Room {
 
             for (Map.Entry<String, Integer> entry : blockId2Count.entrySet()) {
                 BlockType type = BlockType.getAssetMap().getAsset(entry.getKey());
-                if (type.isUnknown()) continue;
+                if (type == null || type.isUnknown()) continue;
                 if (type.getId().equals(BlockType.EMPTY_KEY)) continue;
+                int count = entry.getValue();
 
                 for (ScoreGroup group : ScoreGroup.getAssetMap().getAssetMap().values()) {
-                }
-
-                switch (roomBlock.getRole()) {
-                    case SOLID -> score += 5;
-                    case FURNITURE -> score += 20;
-                    case ENTRANCE -> score += 50;
-                    case WINDOW -> score += 10;
-                }
-
-                if (roomBlock.getType().getLight() != null) {
-                    score += 5;
+                    if (group.matches(type)) {
+                        score += group.getScore() * count;
+                    }
                 }
             }
 
