@@ -143,37 +143,6 @@ public class RoomSize implements JsonAssetWithMap<String, IndexedLookupTableAsse
         }
     }
 
-    public static String getRoomSizeIdFromArea(int area) {
-        return getRoomSizeIdFromArea(null, area);
-    }
-
-    public static String getRoomSizeIdFromArea(String[] roomSizeIds, int area) {
-        String currentId = null;
-        int currentMinArea = 0;
-        if (roomSizeIds == null) {
-            for (Map.Entry<String, RoomSize> entry : getAssetMap().getAssetMap().entrySet()) {
-                RoomSize size = entry.getValue();
-                if (currentId == null || (size.minArea <= area && size.minArea > currentMinArea)) {
-                    currentId = entry.getKey();
-                    currentMinArea = size.minArea;
-                }
-            }
-        } else {
-            for (String id : roomSizeIds) {
-                RoomSize size = getAssetMap().getAsset(id);
-                if (size == null) continue;
-                if (currentId == null || (size.minArea <= area && size.minArea > currentMinArea)) {
-                    currentId = id;
-                    currentMinArea = size.minArea;
-                }
-            }
-        }
-
-        if (currentId != null) return currentId;
-
-        return DEFAULT_KEY;
-    }
-
     @Nonnull
     public static RoomSize getRoomSizeFromArea(int area) {
         return getRoomSizeFromArea(null, area);
@@ -182,10 +151,10 @@ public class RoomSize implements JsonAssetWithMap<String, IndexedLookupTableAsse
     @Nonnull
     public static RoomSize getRoomSizeFromArea(String[] roomSizeIds, int area) {
         RoomSize currentSize = null;
-        if (roomSizeIds == null) {
+        if (roomSizeIds == null || roomSizeIds.length == 0) {
             for (Map.Entry<String, RoomSize> entry : getAssetMap().getAssetMap().entrySet()) {
                 RoomSize size = entry.getValue();
-                if (currentSize == null || (size.minArea <= area && size.minArea > currentSize.minArea)) {
+                if (size.minArea <= area && (currentSize == null || size.minArea > currentSize.minArea)) {
                     currentSize = size;
                 }
             }
@@ -193,7 +162,7 @@ public class RoomSize implements JsonAssetWithMap<String, IndexedLookupTableAsse
             for (String id : roomSizeIds) {
                 RoomSize size = getAssetMap().getAsset(id);
                 if (size == null) continue;
-                if (currentSize == null || (size.minArea <= area && size.minArea > currentSize.minArea)) {
+                if (size.minArea <= area && (currentSize == null || size.minArea > currentSize.minArea)) {
                     currentSize = size;
                 }
             }

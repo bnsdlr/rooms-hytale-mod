@@ -1,5 +1,5 @@
 {
-  "MinArea": 131,
+  "MinArea": 200,
   "MaxArea": 2147483647,
   "ExtraScore": 750,
   "Prefix": "Colossal"

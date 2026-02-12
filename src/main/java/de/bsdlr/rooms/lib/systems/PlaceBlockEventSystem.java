@@ -15,7 +15,6 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import de.bsdlr.rooms.RoomsPlugin;
-import de.bsdlr.rooms.lib.room.RoomDetector;
 import de.bsdlr.rooms.utils.PositionUtils;
 
 import javax.annotation.Nonnull;
@@ -54,17 +53,17 @@ public class PlaceBlockEventSystem extends EntityEventSystem<EntityStore, PlaceB
         LOGGER.atInfo().log("placed %s block", type.getId());
 
         Map<Long, BlockType> overrideBlocks = new HashMap<>();
-        long key = PositionUtils.encodePosition(target);
+        long key = PositionUtils.pack3dPos(target);
         overrideBlocks.put(key, type);
 
-        LOGGER.atInfo().log("decoded block pos: %d %d %d", PositionUtils.decodeX(key), PositionUtils.decodeY(key), PositionUtils.decodeZ(key));
+        LOGGER.atInfo().log("decoded block pos: %d %d %d", PositionUtils.unpack3dX(key), PositionUtils.unpack3dY(key), PositionUtils.unpack3dZ(key));
 
         for (Map.Entry<Long, BlockType> entry : overrideBlocks.entrySet()) {
             long k = entry.getKey();
             BlockType btype = entry.getValue();
-            int decodedX = PositionUtils.decodeX(k);
-            int decodedY = PositionUtils.decodeY(k);
-            int decodedZ = PositionUtils.decodeZ(k);
+            int decodedX = PositionUtils.unpack3dX(k);
+            int decodedY = PositionUtils.unpack3dY(k);
+            int decodedZ = PositionUtils.unpack3dZ(k);
             LOGGER.atInfo().log("%d %d %d %s", decodedX, decodedY, decodedZ, btype.getId());
         }
 

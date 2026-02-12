@@ -5,6 +5,7 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.common.CommonAssetValidator;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 
 public class PluginConfig {
     public static final BuilderCodec<PluginConfig> CODEC = BuilderCodec.builder(PluginConfig.class, PluginConfig::new)
@@ -13,6 +14,14 @@ public class PluginConfig {
                     PluginConfig::getScanRadius)
             .addValidator(new ScanRadiusValidator())
             .add()
+            .append(new KeyedCodec<>("TestBlockId", Codec.STRING),
+                    PluginConfig::setTestBlockId,
+                    PluginConfig::getTestBlockId)
+            .add()
+            .append(new KeyedCodec<>("TestBlockEnabled", Codec.BOOLEAN),
+                    PluginConfig::setTestBlockEnabled,
+                    PluginConfig::isTestBlockEnabled)
+            .add()
             .append(new KeyedCodec<>("Rooms", RoomsConfig.CODEC),
                     PluginConfig::setRoomsConfig,
                     PluginConfig::getRoomsConfig)
@@ -20,11 +29,14 @@ public class PluginConfig {
             .add()
             .build();
     public static final CommonAssetValidator ICON_VALIDATOR = new CommonAssetValidator("png", "Icons/Rooms", "Icons/ItemCategories");
-    private Vector3i scanRadius = new Vector3i(3, 3, 3);
-    private RoomsConfig roomsConfig = new RoomsConfig();
+    protected Vector3i scanRadius = new Vector3i(3, 3, 3);
+    protected String testBlockId = "Rock_Stone";
+    protected boolean testBlockEnabled = false;
+    protected RoomsConfig roomsConfig = new RoomsConfig();
 
     public void validate() {
         roomsConfig.validate();
+        if (!BlockType.getAssetMap().getAssetMap().containsKey(testBlockId)) testBlockId = "Rock_Stone";
         if (scanRadius.x <= 0) scanRadius.setX(1);
         if (scanRadius.y <= 0) scanRadius.setY(1);
         if (scanRadius.z <= 0) scanRadius.setZ(1);
@@ -39,6 +51,27 @@ public class PluginConfig {
         if (scanRadius.y < 0) scanRadius.setY(1);
         if (scanRadius.z < 0) scanRadius.setZ(1);
         this.scanRadius = scanRadius;
+    }
+
+    public String getTestBlockId() {
+        return testBlockId;
+    }
+
+    public void setTestBlockId(String testBlockId) {
+        if (!BlockType.getAssetMap().getAssetMap().containsKey(testBlockId)) return;
+        this.testBlockId = testBlockId;
+    }
+
+    public boolean isTestBlockEnabled() {
+        return testBlockEnabled;
+    }
+
+    public void setTestBlockEnabled(boolean testBlockEnabled) {
+        this.testBlockEnabled = testBlockEnabled;
+    }
+
+    public void toggleTestBlockEnabled() {
+        this.testBlockEnabled = !this.testBlockEnabled;
     }
 
     public RoomsConfig getRoomsConfig() {

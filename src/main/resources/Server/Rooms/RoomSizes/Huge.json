@@ -1,5 +1,5 @@
 {
-  "MinArea": 71,
+  "MinArea": 100,
   "MaxArea": 130,
   "ExtraScore": 300,
   "Prefix": "Huge"

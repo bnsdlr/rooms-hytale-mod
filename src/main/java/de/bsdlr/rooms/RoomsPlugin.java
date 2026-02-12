@@ -28,6 +28,7 @@ import de.bsdlr.rooms.lib.systems.BreakBlockEventSystem;
 import de.bsdlr.rooms.lib.systems.PlaceBlockEventSystem;
 import de.bsdlr.rooms.ui.HudComponent;
 import de.bsdlr.rooms.ui.HudManager;
+import de.bsdlr.rooms.utils.PositionUtils;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -59,28 +60,11 @@ public class RoomsPlugin extends JavaPlugin {
         LOGGER.atInfo().log("             Setting up RoomsPlugin!");
         LOGGER.atInfo().log("=========================================================");
 
-//        Vector3d p1 = new Vector3d(123.123, 100.5, 193.6);
-//        long key = PositionUtils.encodePosition(p1);
-//        Vector3d r1 = new Vector3d(PositionUtils.decodeX(key), PositionUtils.decodeY(key), PositionUtils.decodeZ(key));
-//        LOGGER.atInfo().log("input : %.1f %.1f %.1f", p1.x, p1.y, p1.z);
-//        LOGGER.atInfo().log("output: %.1f %.1f %.1f", r1.x, r1.y, r1.z);
-//
-//        Vector3d p2 = new Vector3d(-123.123, 100.5, -193.6);
-//        long key2 = PositionUtils.encodePosition(p2);
-//        Vector3d r2 = new Vector3d(PositionUtils.decodeX(key2), PositionUtils.decodeY(key2), PositionUtils.decodeZ(key2));
-//        LOGGER.atInfo().log("input : %.1f %.1f %.1f", p2.x, p2.y, p2.z);
-//        LOGGER.atInfo().log("output: %.1f %.1f %.1f", r2.x, r2.y, r2.z);
-
         instance = this;
         config.get().validate();
         config.save();
 
-//        roomManager.load();
-//        roomManager.get();
-//        roomManager.save();
-
         this.getCommandRegistry().registerCommand(new RoomsCommand());
-        this.getCommandRegistry().registerCommand(new DetectCommand());
         this.getCommandRegistry().registerCommand(new RoomsConfigCommand());
         this.getCommandRegistry().registerCommand(new BlockInfoCommand());
         this.getCommandRegistry().registerCommand(new RotateCommand());
@@ -187,6 +171,10 @@ public class RoomsPlugin extends JavaPlugin {
         );
 
         HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(HudManager::handle, 300, 300, TimeUnit.MILLISECONDS);
+        HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(() -> {
+            config.save();
+            roomDataManager.saveAll();
+        }, 5, 5, TimeUnit.MINUTES);
 
         for (RoomType type : RoomType.getAssetMap().getAssetMap().values()) {
             LOGGER.atInfo().log("%s: %s", type.getId(), Arrays.toString(type.getRoomSizeIds()));

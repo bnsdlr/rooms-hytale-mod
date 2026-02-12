@@ -11,6 +11,13 @@
   ],
   "AdditionalScore": 10,
   "Quality": "Common",
-  "RoomSizes": [
+  "RoomSizes": [],
+  "RoomSizeIds": [
+    "Colossal",
+    "Huge",
+    "Large",
+    "Normal",
+    "Small",
+    "Tiny"
   ]
 }

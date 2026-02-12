@@ -10,12 +10,16 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
+import de.bsdlr.rooms.RoomsPlugin;
+import de.bsdlr.rooms.config.PluginConfig;
 import de.bsdlr.rooms.lib.asset.score.ScoreGroup;
 import de.bsdlr.rooms.lib.exceptions.FailedToDetectRoomException;
 import de.bsdlr.rooms.lib.room.block.RoomBlock;
 import de.bsdlr.rooms.lib.room.block.RoomBlockRole;
 import de.bsdlr.rooms.lib.room.block.RoomBlockType;
+import de.bsdlr.rooms.utils.PackedBox;
 import de.bsdlr.rooms.utils.PositionUtils;
+import de.bsdlr.rooms.utils.RoomUtils;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -42,9 +46,16 @@ public class Room {
                     (room, s) -> room.score = s,
                     room -> room.score)
             .add()
-            .append(new KeyedCodec<>("Blocks", new SetCodec<>(Codec.LONG, HashSet::new, false)),
-                    (room, s) -> room.blocks = s,
-                    room -> room.blocks)
+            .append(new KeyedCodec<>("Area", Codec.INTEGER),
+                    (room, s) -> room.area = s,
+                    room -> room.area)
+            .addValidator(Validators.min(1))
+            .add()
+            .<Set<PackedBox>>append(new KeyedCodec<>("PackedBlocks", new SetCodec<>(PackedBox.CODEC, HashSet::new, false)),
+                    (room, s) -> {
+                        room.blocks = RoomUtils.uncompress(s);
+                    },
+                    room -> RoomUtils.compress(room.blocks))
             .addValidator(Validators.nonNull())
             .add()
             .build();
@@ -57,6 +68,7 @@ public class Room {
     @Nonnull
     protected Set<Long> blocks;
     protected boolean validated = false;
+    protected int area;
 
     Room() {
         this.uuid = UUID.randomUUID();
@@ -64,12 +76,13 @@ public class Room {
         this.blocks = new HashSet<>();
     }
 
-    public Room(@Nonnull String roomTypeId, @Nonnull UUID worldUuid, int score, @Nonnull Set<Long> blocks) {
+    public Room(@Nonnull String roomTypeId, @Nonnull UUID worldUuid, int score, @Nonnull Set<Long> blocks, int area) {
         this.uuid = UUID.randomUUID();
         this.roomTypeId = roomTypeId;
         this.worldUuid = worldUuid;
         this.score = score;
         this.blocks = blocks;
+        this.area = area;
     }
 
     @Override
@@ -119,6 +132,10 @@ public class Room {
         return blocks;
     }
 
+    public int getArea() {
+        return area;
+    }
+
     public boolean isValidated() {
         return validated;
     }
@@ -132,15 +149,29 @@ public class Room {
 
     public static class Builder {
         private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+        private final PluginConfig config;
         private final Set<RoomBlock> blocks = new HashSet<>();
         private final Set<RoomBlock> fillerBlocks = new HashSet<>();
         private UUID worldUuid;
+        private int maxY;
+        private int minY;
 
         public Builder() {
+            this.config = RoomsPlugin.get().getConfig().get();
+        }
+
+        public Builder(PluginConfig config) {
+            this.config = config;
         }
 
         public Builder(UUID worldUuid) {
             this.worldUuid = worldUuid;
+            this.config = RoomsPlugin.get().getConfig().get();
+        }
+
+        public Builder(PluginConfig config, UUID worldUuid) {
+            this.worldUuid = worldUuid;
+            this.config = config;
         }
 
         @Nonnull
@@ -154,31 +185,106 @@ public class Room {
             return blockId2Count;
         }
 
-        private Map<Integer, List<Boolean>> y2IsRoomWall() {
-            Map<Integer, List<Boolean>> y2Role = new HashMap<>();
+        private Map<Long, Map<Integer, Boolean>> xz2IsRoomWall() {
+            Map<Long, Map<Integer, Boolean>> xz2isRoomWall = new HashMap<>();
 
-            for (RoomBlock block : blocks) {
-                List<Boolean> l = y2Role.get(block.getY());
-                if (l == null) {
-                    l = new ArrayList<>();
-                    l.add(block.getRole().isRoomWall());
-                    y2Role.put(block.getY(), l);
-                } else {
-                    l.add(block.getRole().isRoomWall());
-                }
-            }
+            addBlocksToY2isRoomWall(xz2isRoomWall, blocks);
+            addBlocksToY2isRoomWall(xz2isRoomWall, fillerBlocks);
 
-            return y2Role;
+            return xz2isRoomWall;
         }
 
+        private void addBlocksToY2isRoomWall(Map<Long, Map<Integer, Boolean>> y2isRoomWall, Set<RoomBlock> blocks) {
+//            World world = Universe.get().getWorld(worldUuid);
+
+            for (RoomBlock block : blocks) {
+                long key = PositionUtils.pack2dPos(block.getX(), block.getZ());
+                y2isRoomWall.computeIfAbsent(key, k -> new HashMap<>()).put(block.getY(), block.getRole().isRoomWall());
+//                if (world != null && config.isTestBlockEnabled()) {
+//                    if (block.getRole().isRoomWall())
+//                        world.setBlock(block.getX(), block.getY(), block.getZ(), config.getTestBlockId());
+//                }
+            }
+        }
+
+//        private List<Vector3i> placeblockshere = new ArrayList<>();
+
         private int findArea() {
-            Map<Integer, List<Boolean>> y2IsRoomWall = y2IsRoomWall();
+            Map<Long, Map<Integer, Boolean>> xz2IsRoomWall = xz2IsRoomWall();
             int area = 0;
 
-            for (List<Boolean> isRoomWallList : y2IsRoomWall.values()) {
-                if (isRoomWallList.contains(false)) {
-                    area++;
+            for (Map.Entry<Long, Map<Integer, Boolean>> entry : xz2IsRoomWall.entrySet()) {
+                Map<Integer, Boolean> isRoomWallMap = entry.getValue();
+//                int x = PositionUtils.unpack2dX(entry.getKey());
+//                int z = PositionUtils.unpack2dZ(entry.getKey());
+//
+//                if (x == 115 && z == 25) {
+//                    LOGGER.atInfo().log("%s", isRoomWallMap.toString());
+//                }
+
+                List<Boolean> isRoomWallList = new ArrayList<>();
+
+                int minY = Integer.MAX_VALUE;
+                int maxY = Integer.MIN_VALUE;
+
+                for (Map.Entry<Integer, Boolean> yEntry : isRoomWallMap.entrySet()) {
+                    int y = yEntry.getKey();
+                    boolean b = yEntry.getValue();
+
+                    if (y < minY) {
+                        if (!isRoomWallList.isEmpty()) {
+                            for (int dy = 0; dy < minY - y - 1; dy++) {
+                                isRoomWallList.addFirst(null);
+                            }
+                        } else {
+                            maxY = y;
+                        }
+                        isRoomWallList.addFirst(b);
+                        minY = y;
+                    } else if (y > maxY) {
+                        for (int dy = 0; dy < y - maxY - 1; dy++) {
+                            isRoomWallList.addLast(null);
+                        }
+                        isRoomWallList.addLast(b);
+                        maxY = y;
+                    } else {
+                        int index = y - minY;
+                        isRoomWallList.set(index, b);
+                    }
                 }
+
+                int newArea = 0;
+                int lastWall = 0;
+
+                for (Boolean b : isRoomWallList) {
+                    if (b == null) {
+                        LOGGER.atInfo().log("is room wall is null");
+                        continue;
+                    }
+                    if (b) {
+                        if (lastWall >= 2) {
+                            newArea++;
+                        }
+                        lastWall = 0;
+                    } else {
+                        lastWall++;
+                    }
+                }
+
+                if (lastWall >= 2) {
+                    newArea++;
+                }
+
+//                if (newArea > 0) {
+//                    LOGGER.atInfo().log("area increased by %d at %d ~ %d", newArea, x, z);
+//                    if (config.isTestBlockEnabled()) {
+//                        for (int dy = 0; dy < newArea; dy++) {
+//                            placeblockshere.add(new Vector3i(x, this.maxY + 2 + dy, z));
+//                        }
+//                    }
+//                }
+
+                area += newArea;
             }
 
             return area;
@@ -236,10 +342,10 @@ public class Room {
             Set<Long> blocks = new HashSet<>();
 
             for (RoomBlock roomBlock : this.blocks) {
-                blocks.add(PositionUtils.encodePosition(roomBlock.getPos()));
+                blocks.add(PositionUtils.pack3dPos(roomBlock.getPos()));
             }
             for (RoomBlock fillerBlock : this.fillerBlocks) {
-                blocks.add(PositionUtils.encodePosition(fillerBlock.getPos()));
+                blocks.add(PositionUtils.pack3dPos(fillerBlock.getPos()));
             }
 
             return blocks;
@@ -265,6 +371,22 @@ public class Room {
             return score;
         }
 
+        public int getMaxY() {
+            return maxY;
+        }
+
+        public void setMaxY(int maxY) {
+            this.maxY = maxY;
+        }
+
+        public int getMinY() {
+            return minY;
+        }
+
+        public void setMinY(int minY) {
+            this.minY = minY;
+        }
+
         public void setWorldUuid(UUID worldUuid) {
             this.worldUuid = worldUuid;
         }
@@ -282,6 +404,15 @@ public class Room {
         }
 
         public Room build() throws FailedToDetectRoomException {
+            int height = maxY - minY + 1;
+//        LOGGER.atInfo().log("miny: %d; maxy: %d; height: %d; counter: %d", minY, maxY, height, counter);
+
+            if (height < config.getMinRoomHeight())
+                throw new FailedToDetectRoomException("Room not heigh enough (min: " + config.getMinRoomHeight() + ", actual: " + height + ").");
+
+            int finalMaxY = maxY;
+            removeIf(block -> block.getY() > finalMaxY);
+
             boolean hasEntrance = false;
             boolean hasLightSource = false;
 
@@ -308,7 +439,16 @@ public class Room {
             RoomType type = findRoomType(area, blockId2Count);
             String id = type.getId() == null ? "Room" : type.getId();
 
-            return new Room(id, worldUuid, calculateScore(blockId2Count), getEncodedBlocks());
+//            World world = Universe.get().getWorld(worldUuid);
+//
+//            if (world != null && config.isTestBlockEnabled()) {
+//                LOGGER.atInfo().log("Would place %d blocks (max y = %d)", placeblockshere.size(), maxY);
+//                for (Vector3i pos : placeblockshere) {
+//                    world.setBlock(pos.x, pos.y, pos.z, config.getTestBlockId());
+//                }
+//            }
+
+            return new Room(id, worldUuid, calculateScore(blockId2Count), getEncodedBlocks(), area);
         }
     }
 }

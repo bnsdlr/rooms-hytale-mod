@@ -1,5 +1,5 @@
 {
-  "MinArea": 6,
+  "MinArea": 10,
   "MaxArea": 15,
   "Prefix": "Small"
 }

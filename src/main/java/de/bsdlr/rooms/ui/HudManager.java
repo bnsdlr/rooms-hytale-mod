@@ -47,7 +47,7 @@ public class HudManager {
                 Vector3d position = playerRef.getTransform().getPosition();
                 Vector3i pos = PositionUtils.positionToVector3i(position);
 //                playerRef.sendMessage(Message.raw(String.format("current position: %d %d %d", pos.x, pos.y, pos.z)));
-                long key = PositionUtils.encodePosition(pos);
+                long key = PositionUtils.pack3dPos(pos);
                 Room room = RoomsPlugin.get().getRoomManagerAndComputeIfAbsent(world.getWorldConfig().getUuid()).getRoom(key);
 
                 if (room != null) {

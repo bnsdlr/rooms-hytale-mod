@@ -44,10 +44,10 @@ public class BreakBlockEventSystem extends EntityEventSystem<EntityStore, BreakB
         }
 
         Map<Long, BlockType> overrideBlocks = new HashMap<>();
-        long key = PositionUtils.encodePosition(target);
+        long key = PositionUtils.pack3dPos(target);
         overrideBlocks.put(key, BlockType.EMPTY);
 
-        LOGGER.atInfo().log("decoded block pos: %d %d %d", PositionUtils.decodeX(key), PositionUtils.decodeY(key), PositionUtils.decodeZ(key));
+        LOGGER.atInfo().log("decoded block pos: %d %d %d", PositionUtils.unpack3dX(key), PositionUtils.unpack3dY(key), PositionUtils.unpack3dZ(key));
 
         RoomDetector.setSilent(true);
         RoomsPlugin.get().getRoomManagerAndComputeIfAbsent(world.getWorldConfig().getUuid()).updateAround(world, target, overrideBlocks);

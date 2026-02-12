@@ -1,10 +1,8 @@
 package de.bsdlr.rooms.lib.room;
 
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.math.shape.Box;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.server.core.asset.type.blockhitbox.BlockBoundingBoxes;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -17,11 +15,9 @@ import de.bsdlr.rooms.lib.exceptions.UnknownBlockException;
 import de.bsdlr.rooms.lib.exceptions.WorldChunkNullException;
 import de.bsdlr.rooms.lib.room.block.RoomBlock;
 import de.bsdlr.rooms.lib.room.block.RoomBlockRole;
-import de.bsdlr.rooms.utils.BlockUtils;
 import de.bsdlr.rooms.utils.ChunkManager;
 import de.bsdlr.rooms.utils.PositionUtils;
 
-import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -66,9 +62,9 @@ public class RoomDetector {
                 ChunkManager chunkManager = new ChunkManager(world);
 
                 for (Long k : room.getBlocks()) {
-                    int bx = PositionUtils.decodeX(k);
-                    int by = PositionUtils.decodeY(k);
-                    int bz = PositionUtils.decodeZ(k);
+                    int bx = PositionUtils.unpack3dX(k);
+                    int by = PositionUtils.unpack3dY(k);
+                    int bz = PositionUtils.unpack3dZ(k);
                     BlockType type = chunkManager.getBlockTypeAt(bx, by, bz);
                     if (!RoomBlockRole.isRoomWall(type)) {
                         future.complete(getRoomAt(world, bx, by, bz));
@@ -126,7 +122,7 @@ public class RoomDetector {
     private static Room flood(ChunkManager chunkManager, PluginConfig config, int x, int y, int z, Map<Long, BlockType> overrideBlocks) throws FailedToDetectRoomException, WorldChunkNullException {
 //        LOGGER.atInfo().log("Start flood (%d %d %d).", x, y, z);
         Set<Vector3i> visited = new HashSet<>();
-        Room.Builder builder = new Room.Builder();
+        Room.Builder builder = new Room.Builder(config);
 
         Deque<RoomBlock> queue = new ArrayDeque<>();
 
@@ -142,8 +138,8 @@ public class RoomDetector {
         visited.add(start.getPos());
         queue.add(start);
 
-        int maxY = Math.min(319, y + boundScanRadius.y);
-        int minY = y;
+        builder.setMinY(y);
+        builder.setMaxY(Math.min(319, y + boundScanRadius.y));
 
         final int fixedMinY = Math.max(0, y - boundScanRadius.y);
         final int fixedMaxX = x + boundScanRadius.x;
@@ -163,11 +159,11 @@ public class RoomDetector {
             RoomBlock currentBlock = queue.poll();
 
             if (currentBlock.getY() < fixedMinY) continue;
-            else if (currentBlock.getY() < minY) {
-                minY = currentBlock.getY();
+            else if (currentBlock.getY() < builder.getMinY()) {
+                builder.setMinY(currentBlock.getY());
             }
 
-            if (currentBlock.getY() > maxY) continue;
+            if (currentBlock.getY() > builder.getMaxY()) continue;
 
             builder.addBlock(currentBlock);
 
@@ -187,14 +183,14 @@ public class RoomDetector {
             )) {
 //                Vector3i next = new Vector3i(offset.x + currentBlock.getX(), offset.y + currentBlock.getY(), offset.z + currentBlock.getZ());
                 if (visited.contains(next)) continue;
-                if (next.y < fixedMinY || next.y > maxY || next.x < fixedMinX || next.x > fixedMaxX || next.z < fixedMinZ || next.z > fixedMaxZ)
+                if (next.y < fixedMinY || next.y > builder.getMaxY() || next.x < fixedMinX || next.x > fixedMaxX || next.z < fixedMinZ || next.z > fixedMaxZ)
                     continue;
 
                 RoomBlock block = null;
                 boolean set = false;
 
                 if (overrideBlocks != null) {
-                    long key = PositionUtils.encodePosition(next);
+                    long key = PositionUtils.pack3dPos(next);
                     if (overrideBlocks.containsKey(key)) {
                         block = new RoomBlock(overrideBlocks.get(key), next, chunkManager.world.getChunkStore());
                         set = true;
@@ -227,8 +223,8 @@ public class RoomDetector {
                 if (next.y != currentBlock.getY()) {
                     if (!isInRoom(chunkManager, boundScanRadius, next.x, next.y, next.z, overrideBlocks)) {
                         int newMaxY = next.y - 1;
-                        if (newMaxY < maxY) {
-                            maxY = newMaxY;
+                        if (newMaxY < builder.getMaxY()) {
+                            builder.setMaxY(newMaxY);
 //                            LOGGER.atInfo().log("new max y: %d", newMaxY);
                         }
 //                        LOGGER.atInfo().log("block is not in room: %d %d %d", next.x, next.y, next.z);
@@ -240,15 +236,6 @@ public class RoomDetector {
                 }
             }
         }
-
-        int height = maxY - minY + 1;
-//        LOGGER.atInfo().log("miny: %d; maxy: %d; height: %d; counter: %d", minY, maxY, height, counter);
-
-        if (height < config.getMinRoomHeight())
-            throw new FailedToDetectRoomException("Room not heigh enough (min: " + config.getMinRoomHeight() + ", actual: " + height + ").");
-
-        int finalMaxY = maxY;
-        builder.removeIf(block -> block.getY() > finalMaxY);
 
         return builder.build();
     }
@@ -325,7 +312,7 @@ public class RoomDetector {
             boolean set = false;
 
             if (overrideBlocks != null) {
-                long key = PositionUtils.encodePosition(bx, y, bz);
+                long key = PositionUtils.pack3dPos(bx, y, bz);
                 type = overrideBlocks.get(key);
                 set = type != null;
             }
@@ -371,7 +358,7 @@ public class RoomDetector {
             boolean set = false;
 
             if (overrideBlocks != null) {
-                long key = PositionUtils.encodePosition(x, by, z);
+                long key = PositionUtils.pack3dPos(x, by, z);
                 type = overrideBlocks.get(key);
                 set = type != null;
             }

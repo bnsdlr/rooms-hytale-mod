@@ -1,5 +1,6 @@
 package de.bsdlr.rooms.utils;
 
+import com.hypixel.hytale.math.vector.Vector2i;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 
@@ -46,29 +47,48 @@ public class PositionUtils {
         return new Vector3i(posX, posY, posZ);
     }
 
-    public static long encodePosition(Vector3i vec) {
-        return encodePosition(vec.x, vec.y, vec.z);
+    public static long pack3dPos(Vector3i vec) {
+        return pack3dPos(vec.x, vec.y, vec.z);
     }
 
-    public static long encodePosition(int x, int y, int z) {
+    public static long pack3dPos(int x, int y, int z) {
         return ((long) (x & 0x3FFFFFF) << 38) |
                 ((long) (z & 0x3FFFFFF) << 12) |
                 ((long) (y & 0xFFF));
     }
 
-    public static int decodeX(long encoded) {
-        int x = (int) (encoded >> 38) & 0x3FFFFFF;
+    public static int unpack3dX(long key) {
+        int x = (int) (key >> 38) & 0x3FFFFFF;
         return x >= TWO_TO_THE_POWER_OF_TWENTY_FIVE ? x - TWO_TO_THE_POWER_OF_TWENTY_SIX : x;
     }
 
-    public static int decodeY(long encoded) {
-        int y = (int) (encoded & 0xFFF);
+    public static int unpack3dY(long key) {
+        int y = (int) (key & 0xFFF);
         return y >= TWO_TO_THE_POWER_OF_ELEVEN ? y - TWO_TO_THE_POWER_OF_TWELVE : y;
     }
 
-    public static int decodeZ(long encoded) {
-        int z = (int) ((encoded >> 12) & 0x3FFFFFF);
+    public static int unpack3dZ(long key) {
+        int z = (int) ((key >> 12) & 0x3FFFFFF);
         return z >= TWO_TO_THE_POWER_OF_TWENTY_FIVE ? z - TWO_TO_THE_POWER_OF_TWENTY_SIX : z;
+    }
+
+    public static Vector3i unpack3d(long key) {
+        int x = unpack3dX(key);
+        int y = unpack3dY(key);
+        int z = unpack3dZ(key);
+        return new Vector3i(x,y,z);
+    }
+
+    public static long pack2dPos(int x, int z) {
+        return ((long) x << 32) | (z & 0xFFFFFFFFL);
+    }
+
+    public static int unpack2dX(long key) {
+        return (int) (key >>> 32);
+    }
+
+    public static int unpack2dZ(long key) {
+        return (int) key;
     }
 
 //    public static Vector3i positionToVector3i(Vector3d position) {

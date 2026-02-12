@@ -42,11 +42,11 @@ public class RoomManager {
     }
 
     public Room getRoom(Vector3d position) {
-        return getRoom(PositionUtils.encodePosition(PositionUtils.positionToVector3i(position)));
+        return getRoom(PositionUtils.pack3dPos(PositionUtils.positionToVector3i(position)));
     }
 
     public Room getRoom(int x, int y, int z) {
-        return getRoom(PositionUtils.encodePosition(x, y, z));
+        return getRoom(PositionUtils.pack3dPos(x, y, z));
     }
 
     public Room getRoom(long key) {
@@ -88,9 +88,9 @@ public class RoomManager {
 
         for (Long key : overrideBlocks.keySet()) {
             BlockType type = overrideBlocks.get(key);
-            int x = PositionUtils.decodeX(key);
-            int y = PositionUtils.decodeY(key);
-            int z = PositionUtils.decodeZ(key);
+            int x = PositionUtils.unpack3dX(key);
+            int y = PositionUtils.unpack3dY(key);
+            int z = PositionUtils.unpack3dZ(key);
             for (PlayerRef playerRef : Universe.get().getPlayers()) {
                 playerRef.sendMessage(Message.raw("override block at " + x + " " + y + " " + z + " with " + type.getId()));
             }
@@ -100,7 +100,7 @@ public class RoomManager {
             int bx = target.x + dx;
             int by = target.y + dy;
             int bz = target.z + dz;
-            long key = PositionUtils.encodePosition(bx, by, bz);
+            long key = PositionUtils.pack3dPos(bx, by, bz);
 
             Room room = getRoom(key);
 
