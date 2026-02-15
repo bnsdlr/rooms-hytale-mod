@@ -47,6 +47,7 @@ public class Quality implements JsonAssetWithMap<String, IndexedLookupTableAsset
             .metadata(new UIEditor(new UIEditor.LocalizationKeyField("server.rooms.qualities.{assetId}", true)))
             .add()
             .build();
+    public static final String COMMON_ID = "Common";
     public static final int DEFAULT_INDEX = 0;
     public static final String DEFAULT_ID = "Default";
     @Nonnull

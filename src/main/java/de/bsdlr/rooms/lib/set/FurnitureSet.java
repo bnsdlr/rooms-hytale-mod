@@ -40,7 +40,7 @@ public class FurnitureSet {
     public FurnitureSet(FurnitureSetType furnitureSetType, @Nonnull Vector3i pos) {
         this.furnitureSetId = furnitureSetType.id;
         this.pos = pos;
-        this.blocks = Arrays.stream(furnitureSetType.getFurnitureSetBlockTypes()).map(FurnitureSetBlock::new).toArray(FurnitureSetBlock[]::new);
+        this.blocks = Arrays.stream(furnitureSetType.getBlocks()).map(FurnitureSetBlock::new).toArray(FurnitureSetBlock[]::new);
     }
 
     public FurnitureSet(String furnitureSetId, @Nonnull Vector3i pos, FurnitureSetBlock[] blocks) {

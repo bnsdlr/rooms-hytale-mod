@@ -59,7 +59,7 @@ public class FurnitureSetDetector {
 
         List<FurnitureSetBlockType> matchingFurnitureSetBlockTypes = new ArrayList<>();
 
-        for (FurnitureSetBlockType furnitureSetBlockType : furnitureSetType.furnitureSetBlockTypes) {
+        for (FurnitureSetBlockType furnitureSetBlockType : furnitureSetType.blocks) {
             if (furnitureSetBlockType.getBlockId() == null) continue;
             if (furnitureSetBlockType.getBlockId().equals(type.getId())) {
                 matchingFurnitureSetBlockTypes.add(furnitureSetBlockType);

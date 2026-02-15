@@ -6,16 +6,22 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EntityEventSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.math.shape.Box;
+import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.blockhitbox.BlockBoundingBoxes;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import de.bsdlr.rooms.RoomsPlugin;
+import de.bsdlr.rooms.lib.exceptions.WorldChunkNullException;
 import de.bsdlr.rooms.lib.room.RoomDetector;
+import de.bsdlr.rooms.utils.BlockUtils;
 import de.bsdlr.rooms.utils.PositionUtils;
 
 import javax.annotation.Nonnull;
@@ -44,10 +50,12 @@ public class BreakBlockEventSystem extends EntityEventSystem<EntityStore, BreakB
         }
 
         Map<Long, BlockType> overrideBlocks = new HashMap<>();
-        long key = PositionUtils.pack3dPos(target);
-        overrideBlocks.put(key, BlockType.EMPTY);
 
-        LOGGER.atInfo().log("decoded block pos: %d %d %d", PositionUtils.unpack3dX(key), PositionUtils.unpack3dY(key), PositionUtils.unpack3dZ(key));
+        for (Vector3i pos : BlockUtils.getAllOccupiedPositions(world, event.getBlockType(), target)) {
+            long key = PositionUtils.pack3dPos(pos);
+            overrideBlocks.put(key, BlockType.EMPTY);
+            LOGGER.atInfo().log("override block pos: %d %d %d with Empty", PositionUtils.unpack3dX(key), PositionUtils.unpack3dY(key), PositionUtils.unpack3dZ(key));
+        }
 
         RoomDetector.setSilent(true);
         RoomsPlugin.get().getRoomManagerAndComputeIfAbsent(world.getWorldConfig().getUuid()).updateAround(world, target, overrideBlocks);

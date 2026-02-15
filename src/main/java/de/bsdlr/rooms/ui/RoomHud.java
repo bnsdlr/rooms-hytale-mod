@@ -3,7 +3,6 @@ package de.bsdlr.rooms.ui;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
-import com.hypixel.hytale.server.core.ui.Value;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import de.bsdlr.rooms.lib.room.Room;
@@ -12,7 +11,6 @@ import de.bsdlr.rooms.lib.room.RoomTranslationProperties;
 import de.bsdlr.rooms.lib.room.RoomType;
 
 import javax.annotation.Nonnull;
-import java.awt.*;
 import java.util.Arrays;
 
 public class RoomHud extends CustomUIHud {
@@ -61,9 +59,12 @@ public class RoomHud extends CustomUIHud {
         LOGGER.atInfo().log("score: %d", room.getScore());
         LOGGER.atInfo().log("description: %s", description);
         updateName(Message.raw(name).color(type.getColorOrFallback().toString()));
-//        updateScore(room.getScore());
-        updateDescription(description);
-        update(SCORE_ID + TEXT_SPANS, Message.raw(room.getScore() + " (" + room.getArea() + ")"));
+        updateScore(room.getScore());
+        updateDescription(description == null ? String.format("area: %d\nfloor blocks: %d\nwall blocks: %d",
+                room.getArea(),
+                room.getFloorBlockMap().values().stream().reduce(Integer::sum).get(),
+                room.getWallBlockMap().values().stream().reduce(Integer::sum).get()) : description);
+//        update(SCORE_ID + TEXT_SPANS, Message.raw(room.getScore() + " (" + room.getArea() + ")"));
     }
 
     private void update(String id, Message message) {

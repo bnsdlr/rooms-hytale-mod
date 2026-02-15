@@ -1,4 +1,4 @@
-package de.bsdlr.rooms.lib.room.block;
+package de.bsdlr.rooms.lib.blocks;
 
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
@@ -68,6 +68,10 @@ public class PreferredBlockType {
             LOGGER.atSevere().withCause(e).log("Could not find matching block ids.");
             throw e;
         }
+    }
+
+    public boolean matches(String blockId) {
+        return StringUtil.isGlobMatching(blockIdPattern, blockId);
     }
 
     public String[] getMatchingBlockIds() {

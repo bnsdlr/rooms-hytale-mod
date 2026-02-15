@@ -1,6 +1,5 @@
 package de.bsdlr.rooms.utils;
 
-import com.hypixel.hytale.math.vector.Vector2i;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 
@@ -14,9 +13,21 @@ public class PositionUtils {
     public static final int TWO_TO_THE_POWER_OF_TWENTY_SIX = 67108864;
 
     public static void forOffsetInRadius(Vector3i radius, TriFunction<Integer, Integer, Integer, Void> f) {
-        for (int dx = -radius.x + 1; dx < radius.x; dx++) {
-            for (int dy = -radius.y + 1; dy < radius.y; dy++) {
-                for (int dz = -radius.z + 1; dz < radius.z; dz++) {
+        forOffsetInRadius(radius, 0, 0, 0, f);
+    }
+
+    public static void forOffsetInRadius(Vector3i radius, Vector3i offSet, TriFunction<Integer, Integer, Integer, Void> f) {
+        forOffsetInRadius(radius, offSet.x, offSet.y, offSet.z, f);
+    }
+
+    public static void forOffsetInRadius(Vector3i radius, int offSetX, int offSetY, int offSetZ, TriFunction<Integer, Integer, Integer, Void> f) {
+        int rx = radius.x + offSetX;
+        int ry = radius.y + offSetY;
+        int rz = radius.z + offSetZ;
+
+        for (int dx = -rx + 1; dx < rx; dx++) {
+            for (int dy = -ry + 1; dy < ry; dy++) {
+                for (int dz = -rz + 1; dz < rz; dz++) {
                     f.accept(dx, dy, dz);
                 }
             }
@@ -24,11 +35,22 @@ public class PositionUtils {
     }
 
     public static <R, C extends Collection<R>> C forOffsetInRadius(Vector3i radius, TriFunction<Integer, Integer, Integer, R> f, Supplier<C> supplier) {
-        C results = supplier.get();
+        return forOffsetInRadius(radius, 0, 0, 0, f, supplier);
+    }
 
-        for (int dx = -radius.x + 1; dx < radius.x; dx++) {
-            for (int dy = -radius.y + 1; dy < radius.y; dy++) {
-                for (int dz = -radius.z + 1; dz < radius.z; dz++) {
+    public static <R, C extends Collection<R>> C forOffsetInRadius(Vector3i radius, Vector3i offSet, TriFunction<Integer, Integer, Integer, R> f, Supplier<C> supplier) {
+        return forOffsetInRadius(radius, offSet.x, offSet.y, offSet.z, f, supplier);
+    }
+
+    public static <R, C extends Collection<R>> C forOffsetInRadius(Vector3i radius, int offSetX, int offSetY, int offSetZ, TriFunction<Integer, Integer, Integer, R> f, Supplier<C> supplier) {
+        C results = supplier.get();
+        int rx = radius.x + offSetX;
+        int ry = radius.y + offSetY;
+        int rz = radius.z + offSetZ;
+
+        for (int dx = -rx + 1; dx < rx; dx++) {
+            for (int dy = -ry + 1; dy < ry; dy++) {
+                for (int dz = -rz + 1; dz < rz; dz++) {
                     R value = f.accept(dx, dy, dz);
                     if (value != null) {
                         results.add(value);
@@ -45,6 +67,31 @@ public class PositionUtils {
         int posY = (int) position.y;
         int posZ = (position.z < 0) ? (int) Math.floor(position.z) : (int) position.z;
         return new Vector3i(posX, posY, posZ);
+    }
+
+    public static void applyOffset(Vector3i pos, int ox, int oy, int oz) {
+        pos.x += ox;
+        pos.y += oy;
+        pos.z += oz;
+    }
+
+    public static Vector3i toDiff(Vector3d min, Vector3d max) {
+        return toDiff(toFullBlockPosition(min, true), toFullBlockPosition(max, false));
+    }
+
+    public static Vector3i toDiff(Vector3i min, Vector3i max) {
+        return new Vector3i(max.x - min.x, max.y - min.y, max.z - min.z);
+    }
+
+    public static Vector3i toFullBlockPosition(Vector3d pos, boolean isMin) {
+        int x = (int) (pos.x > 0 ? (isMin ? Math.floor(pos.x) : Math.ceil(pos.x)) : (isMin ? Math.ceil(pos.x) : Math.floor(pos.x)));
+        int y = (int) (pos.y > 0 ? (isMin ? Math.floor(pos.y) : Math.ceil(pos.y)) : (isMin ? Math.ceil(pos.y) : Math.floor(pos.y)));
+        int z = (int) (pos.z > 0 ? (isMin ? Math.floor(pos.z) : Math.ceil(pos.z)) : (isMin ? Math.ceil(pos.z) : Math.floor(pos.z)));
+        return new Vector3i(x, y, z);
+    }
+
+    public static long update(long pos, int changeInX, int changeInY, int changeInZ) {
+        return pack3dPos(unpack3dX(pos) + changeInX, unpack3dY(pos) + changeInY, unpack3dZ(pos) + changeInZ);
     }
 
     public static long pack3dPos(Vector3i vec) {
@@ -76,7 +123,7 @@ public class PositionUtils {
         int x = unpack3dX(key);
         int y = unpack3dY(key);
         int z = unpack3dZ(key);
-        return new Vector3i(x,y,z);
+        return new Vector3i(x, y, z);
     }
 
     public static long pack2dPos(int x, int z) {

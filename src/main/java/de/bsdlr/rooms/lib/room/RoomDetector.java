@@ -66,7 +66,7 @@ public class RoomDetector {
                     int by = PositionUtils.unpack3dY(k);
                     int bz = PositionUtils.unpack3dZ(k);
                     BlockType type = chunkManager.getBlockTypeAt(bx, by, bz);
-                    if (!RoomBlockRole.isRoomWall(type)) {
+                    if (!RoomBlockRole.isRoomBound(type)) {
                         future.complete(getRoomAt(world, bx, by, bz));
                     }
                 }
@@ -75,27 +75,27 @@ public class RoomDetector {
 
         LOGGER.atInfo().log("Waiting for execution to finish.");
         Room result = future.get();
-        LOGGER.atInfo().log("Got room: %s", result);
+        LOGGER.atInfo().log("Got room: %s", result == null ? null : result.getRoomTypeId());
         return result;
     }
 
-    public static Set<Room> detectRooms(World world, int x, int y, int z) throws WorldChunkNullException {
-        Vector3i radius = RoomsPlugin.get().getConfig().get().getScanRadius();
-
-        return PositionUtils.forOffsetInRadius(radius, (dx, dy, dz) -> {
-            try {
-                int bx = dx + x;
-                int by = dy + y;
-                int bz = dz + z;
-//                        ctx.sendMessage(Message.raw("pos: " + bx + " " + by + " " + bz));
-//                        world.setBlock(bx, by, bz, "Rock_Stone");
-                return getRoomAt(world, bx, by, bz);
-            } catch (FailedToDetectRoomException e) {
-                LOGGER.atWarning().withCause(e).log(e.getMessage());
-                return null;
-            }
-        }, HashSet::new);
-    }
+//    public static Set<Room> detectRooms(World world, int x, int y, int z) throws WorldChunkNullException {
+//        Vector3i radius = RoomsPlugin.get().getConfig().get().getScanRadius();
+//
+//        return PositionUtils.forOffsetInRadius(radius, (dx, dy, dz) -> {
+//            try {
+//                int bx = dx + x;
+//                int by = dy + y;
+//                int bz = dz + z;
+////                        ctx.sendMessage(Message.raw("pos: " + bx + " " + by + " " + bz));
+////                        world.setBlock(bx, by, bz, "Rock_Stone");
+//                return getRoomAt(world, bx, by, bz);
+//            } catch (FailedToDetectRoomException e) {
+//                LOGGER.atWarning().withCause(e).log(e.getMessage());
+//                return null;
+//            }
+//        }, HashSet::new);
+//    }
 
     public static Room getRoomAt(World world, int x, int y, int z) throws FailedToDetectRoomException, WorldChunkNullException {
         return getRoomAt(world, x, y, z, null);
@@ -132,7 +132,7 @@ public class RoomDetector {
             throw new FailedToDetectRoomException("Could not detect room: no walls detected at source position");
 
         RoomBlock start = chunkManager.getRoomBlockAt(x, y, z);
-        if (start.getRole().isRoomWall())
+        if (start.getRole().isRoomBound())
             throw new FailedToDetectRoomException("Flood aborted: start position is in wall.");
 
         visited.add(start.getPos());
@@ -209,7 +209,7 @@ public class RoomDetector {
                 RoomBlockRole role = block.getRole();
 
 //                LOGGER.atInfo().log("(%d) next: %d %d %d; role: %s; wall: %s", counter, next.x, next.y, next.z, role, role.isRoomWall());
-                if (role.isRoomWall()) {
+                if (role.isRoomBound()) {
 //                    if (blockBuilder.isFiller()) {
 //                        addFillerBlocks(chunkManager, visited, builder, blockBuilder);
 //                    }
@@ -337,7 +337,7 @@ public class RoomDetector {
 
             if (type == null) throw new UnknownBlockException("Unknown block!!");
 
-            if (RoomBlockRole.isRoomWall(type)) return true;
+            if (RoomBlockRole.isRoomBound(type)) return true;
         }
 
         return false;

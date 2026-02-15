@@ -13,6 +13,7 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import de.bsdlr.rooms.RoomsPlugin;
 import de.bsdlr.rooms.lib.exceptions.FailedToDetectRoomException;
+import de.bsdlr.rooms.utils.PackedBox;
 import de.bsdlr.rooms.utils.PositionUtils;
 
 import java.util.*;
@@ -30,10 +31,8 @@ public class RoomManager {
             .add()
             .build();
     protected final Set<Room> rooms;
-    protected final Map<Long, Room> longToRoom;
 
     public RoomManager() {
-        longToRoom = new HashMap<>();
         rooms = new HashSet<>();
     }
 
@@ -42,42 +41,33 @@ public class RoomManager {
     }
 
     public Room getRoom(Vector3d position) {
-        return getRoom(PositionUtils.pack3dPos(PositionUtils.positionToVector3i(position)));
-    }
-
-    public Room getRoom(int x, int y, int z) {
-        return getRoom(PositionUtils.pack3dPos(x, y, z));
+        Vector3i pos = PositionUtils.positionToVector3i(position);
+        return getRoom(pos.x, pos.y, pos.z);
     }
 
     public Room getRoom(long key) {
-        return longToRoom.get(key);
+        int x = PositionUtils.unpack3dX(key);
+        int y = PositionUtils.unpack3dY(key);
+        int z = PositionUtils.unpack3dZ(key);
+
+        return getRoom(x, y, z);
+    }
+
+    public Room getRoom(int x, int y, int z) {
+        for (Room room : rooms) {
+            if (room.containsPos(x, y, z)) return room;
+        }
+        return null;
     }
 
     public void addRoom(Room room) {
-        LOGGER.atInfo().log("Adding room: %s", room.uuid);
+        LOGGER.atInfo().log("Adding room: %s", room.roomTypeId);
         rooms.add(room);
-//        int containsKeyCounter = 0;
-//        int sameRoomCounter = 0;
-        for (Long key : room.getBlocks()) {
-//            if (longToRoom.containsKey(key)) {
-//                containsKeyCounter++;
-//                if (!longToRoom.get(key).equals(room)) {
-//                    sameRoomCounter++;
-//                    removeRoom(longToRoom.get(key));
-//                }
-//            }
-            longToRoom.put(key, room);
-        }
-//        LOGGER.atInfo().log("contains key counter: %d", containsKeyCounter);
-//        LOGGER.atInfo().log("same room counter: %d", sameRoomCounter);
     }
 
     public void removeRoom(Room room) {
-        LOGGER.atInfo().log("Removing room: %s", room.uuid);
+        LOGGER.atInfo().log("Removing room: %s", room.roomTypeId);
         rooms.remove(room);
-        for (Long key : room.getBlocks()) {
-            longToRoom.remove(key);
-        }
     }
 
     public void updateAround(World world, Vector3i target, Map<Long, BlockType> overrideBlocks) {
@@ -96,10 +86,7 @@ public class RoomManager {
             }
         }
 
-        Set<Room> rooms = PositionUtils.forOffsetInRadius(scanRadius, (dx, dy, dz) -> {
-            int bx = target.x + dx;
-            int by = target.y + dy;
-            int bz = target.z + dz;
+        Set<Room> rooms = PositionUtils.forOffsetInRadius(scanRadius, target, (bx, by, bz) -> {
             long key = PositionUtils.pack3dPos(bx, by, bz);
 
             Room room = getRoom(key);
@@ -107,7 +94,7 @@ public class RoomManager {
             try {
                 Room detectedRoom = RoomDetector.getRoomAt(world, bx, by, bz, overrideBlocks);
 
-                LOGGER.atInfo().log("detected room: %s", detectedRoom == null ? null : detectedRoom.getBlocks().size());
+                LOGGER.atInfo().log("detected room: %s", detectedRoom);
 
                 if (room != null) {
                     if (!room.equals(detectedRoom)) {

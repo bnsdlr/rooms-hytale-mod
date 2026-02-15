@@ -1,18 +1,40 @@
 package de.bsdlr.rooms.utils;
 
+import com.hypixel.hytale.function.consumer.TriConsumer;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PositionUtilsTest {
+    @ParameterizedTest
+    @MethodSource("updateCases")
+    void testUpdate(Vector3i in, int changeInX, int changeInY, int changeInZ, Vector3i result) {
+        long inKey = PositionUtils.pack3dPos(in);
+        long resultKey = PositionUtils.pack3dPos(result);
+        long updated = PositionUtils.update(inKey, changeInX, changeInY, changeInZ);
+
+        assertEquals(resultKey, updated);
+    }
+
+    static Stream<Arguments> updateCases() {
+        return Stream.of(
+                Arguments.of(new Vector3i(0, 0, 0), 0, 1, 0, new Vector3i(0, 1, 0)),
+                Arguments.of(new Vector3i(0, 0, 0), 3, 1, 0, new Vector3i(3, 1, 0)),
+                Arguments.of(new Vector3i(0, 0, 0), 0, 1, -3, new Vector3i(0, 1, -3))
+        );
+    }
 
     // Test 3D packing/unpacking with various coordinate values
     @ParameterizedTest

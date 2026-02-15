@@ -3,6 +3,7 @@ package de.bsdlr.rooms.lib.room;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
+import com.hypixel.hytale.codec.codecs.map.MapCodec;
 import com.hypixel.hytale.codec.codecs.set.SetCodec;
 import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -17,9 +18,7 @@ import de.bsdlr.rooms.lib.exceptions.FailedToDetectRoomException;
 import de.bsdlr.rooms.lib.room.block.RoomBlock;
 import de.bsdlr.rooms.lib.room.block.RoomBlockRole;
 import de.bsdlr.rooms.lib.room.block.RoomBlockType;
-import de.bsdlr.rooms.utils.PackedBox;
-import de.bsdlr.rooms.utils.PositionUtils;
-import de.bsdlr.rooms.utils.RoomUtils;
+import de.bsdlr.rooms.utils.*;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -28,10 +27,6 @@ import java.util.function.Predicate;
 
 public class Room {
     public static final BuilderCodec<Room> CODEC = BuilderCodec.builder(Room.class, Room::new)
-            .append(new KeyedCodec<>("UUID", Codec.UUID_BINARY),
-                    (room, s) -> room.uuid = s,
-                    room -> room.uuid)
-            .add()
             .append(new KeyedCodec<>("Id", Codec.STRING),
                     (room, s) -> room.roomTypeId = s,
                     room -> room.roomTypeId)
@@ -51,37 +46,46 @@ public class Room {
                     room -> room.area)
             .addValidator(Validators.min(1))
             .add()
-            .<Set<PackedBox>>append(new KeyedCodec<>("PackedBlocks", new SetCodec<>(PackedBox.CODEC, HashSet::new, false)),
-                    (room, s) -> {
-                        room.blocks = RoomUtils.uncompress(s);
-                    },
-                    room -> RoomUtils.compress(room.blocks))
+            .append(new KeyedCodec<>("Boxes", new SetCodec<>(PackedBox.CODEC, HashSet::new, false)),
+                    (room, s) -> room.boxes = s,
+                    room -> room.boxes)
             .addValidator(Validators.nonNull())
+            .add()
+            .append(new KeyedCodec<>("BlockMap", new MapCodec<>(Codec.INTEGER, HashMap::new, false)),
+                    (room, s) -> room.blockMap = s,
+                    room -> room.blockMap)
             .add()
             .build();
     @Nonnull
-    protected UUID uuid;
-    @Nonnull
     protected String roomTypeId;
+    @Nonnull
+    protected String[] matchingRoomTypeIds;
     protected UUID worldUuid;
     protected int score;
     @Nonnull
-    protected Set<Long> blocks;
+    protected Set<PackedBox> boxes;
+    @Nonnull
+    protected Map<String, Integer> blockMap = new HashMap<>();
     protected boolean validated = false;
     protected int area;
 
     Room() {
-        this.uuid = UUID.randomUUID();
         this.roomTypeId = RoomType.DEFAULT_KEY;
-        this.blocks = new HashSet<>();
+        this.matchingRoomTypeIds = new String[]{RoomType.DEFAULT_KEY};
+        this.boxes = new HashSet<>();
     }
 
-    public Room(@Nonnull String roomTypeId, @Nonnull UUID worldUuid, int score, @Nonnull Set<Long> blocks, int area) {
-        this.uuid = UUID.randomUUID();
+    public Room(String roomTypeId, String[] matchingRoomTypeIds, @Nonnull UUID worldUuid, int score, @Nonnull Set<PackedBox> boxes, @Nonnull Map<String, Integer> blockMap, int area) {
+        if (roomTypeId == null) roomTypeId = RoomType.DEFAULT_KEY;
+        if (matchingRoomTypeIds == null) matchingRoomTypeIds = new String[]{RoomType.DEFAULT_KEY};
+        else Arrays.sort(matchingRoomTypeIds);
+
         this.roomTypeId = roomTypeId;
+        this.matchingRoomTypeIds = matchingRoomTypeIds;
         this.worldUuid = worldUuid;
         this.score = score;
-        this.blocks = blocks;
+        this.boxes = boxes;
+        this.blockMap = blockMap;
         this.area = area;
     }
 
@@ -92,16 +96,23 @@ public class Room {
         if (!obj.getClass().equals(getClass())) return false;
         Room o = (Room) obj;
 
-        return roomTypeId.equals(o.roomTypeId) && worldUuid.equals(o.worldUuid) && score == o.score && blocks.equals(o.blocks);
+        return Arrays.equals(matchingRoomTypeIds, o.matchingRoomTypeIds)
+                && worldUuid.equals(o.worldUuid)
+                && score == o.score
+                && area == o.area
+                && blockMap.equals(o.blockMap)
+                && boxes.equals(o.boxes);
     }
 
     @Override
     public int hashCode() {
         int result = 1;
-        result = 31 * result + Objects.hashCode(roomTypeId);
+        result = 31 * result + Arrays.hashCode(matchingRoomTypeIds);
         result = 31 * result + Objects.hashCode(worldUuid);
         result = 31 * result + Objects.hashCode(score);
-        result = 31 * result + Objects.hashCode(blocks);
+        result = 31 * result + Objects.hashCode(area);
+        result = 31 * result + Objects.hashCode(blockMap);
+        result = 31 * result + Objects.hashCode(boxes);
         return result;
     }
 
@@ -109,13 +120,14 @@ public class Room {
         return RoomType.getAssetMap().getAsset(roomTypeId);
     }
 
-    public UUID getUuid() {
-        return uuid;
-    }
-
     @Nonnull
     public String getRoomTypeId() {
         return roomTypeId;
+    }
+
+    @Nonnull
+    public String[] getMatchingRoomTypeIds() {
+        return matchingRoomTypeIds;
     }
 
     @Nonnull
@@ -128,8 +140,13 @@ public class Room {
     }
 
     @Nonnull
-    public Set<Long> getBlocks() {
-        return blocks;
+    public Set<PackedBox> getBoxes() {
+        return boxes;
+    }
+
+    @Nonnull
+    public Map<String, Integer> getBlockMap() {
+        return blockMap;
     }
 
     public int getArea() {
@@ -138,6 +155,14 @@ public class Room {
 
     public boolean isValidated() {
         return validated;
+    }
+
+    public boolean containsPos(int x, int y, int z) {
+        for (PackedBox box : boxes) {
+            if (box.containsPos(x, y, z)) return true;
+        }
+
+        return false;
     }
 
     public Room validate(Vector3i pos, long key) throws ExecutionException, InterruptedException {
@@ -150,8 +175,8 @@ public class Room {
     public static class Builder {
         private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
         private final PluginConfig config;
-        private final Set<RoomBlock> blocks = new HashSet<>();
-        private final Set<RoomBlock> fillerBlocks = new HashSet<>();
+        private final Map<Long, RoomBlock> blocks = new HashMap<>();
+        private final Map<Long, RoomBlock> fillerBlocks = new HashMap<>();
         private UUID worldUuid;
         private int maxY;
         private int minY;
@@ -175,31 +200,39 @@ public class Room {
         }
 
         @Nonnull
-        private Map<String, Integer> getBlockId2Count() {
-            Map<String, Integer> blockId2Count = new HashMap<>();
+        private TripleOf<Map<String, Integer>> getBlockId2CountMaps() {
+            Map<String, Integer> allBlockIds2Count = new HashMap<>();
+            Map<String, Integer> wallBlockId2Count = new HashMap<>();
+            Map<String, Integer> floorBlockId2Count = new HashMap<>();
 
-            for (RoomBlock block : blocks) {
-                blockId2Count.merge(block.getType().getId(), 1, Integer::sum);
+            for (Map.Entry<Long, RoomBlock> entry : blocks.entrySet()) {
+                int kindOfWall = RoomBlockRole.whatKindOfWall(entry.getKey(), entry.getValue(), blocks);
+                if (kindOfWall == RoomBlockRole.SOLID_IS_WALL) {
+                    wallBlockId2Count.merge(entry.getValue().getType().getId(), 1, Integer::sum);
+                } else if (kindOfWall == RoomBlockRole.SOLID_IS_FLOOR) {
+                    floorBlockId2Count.merge(entry.getValue().getType().getId(), 1, Integer::sum);
+                }
+                allBlockIds2Count.merge(entry.getValue().getType().getId(), 1, Integer::sum);
             }
 
-            return blockId2Count;
+            return new TripleOf<>(allBlockIds2Count, wallBlockId2Count, floorBlockId2Count);
         }
 
         private Map<Long, Map<Integer, Boolean>> xz2IsRoomWall() {
             Map<Long, Map<Integer, Boolean>> xz2isRoomWall = new HashMap<>();
 
-            addBlocksToY2isRoomWall(xz2isRoomWall, blocks);
-            addBlocksToY2isRoomWall(xz2isRoomWall, fillerBlocks);
+            addBlocksToY2isRoomWall(xz2isRoomWall, blocks.values());
+            addBlocksToY2isRoomWall(xz2isRoomWall, fillerBlocks.values());
 
             return xz2isRoomWall;
         }
 
-        private void addBlocksToY2isRoomWall(Map<Long, Map<Integer, Boolean>> y2isRoomWall, Set<RoomBlock> blocks) {
+        private void addBlocksToY2isRoomWall(Map<Long, Map<Integer, Boolean>> y2isRoomWall, Collection<RoomBlock> blocks) {
 //            World world = Universe.get().getWorld(worldUuid);
 
             for (RoomBlock block : blocks) {
                 long key = PositionUtils.pack2dPos(block.getX(), block.getZ());
-                y2isRoomWall.computeIfAbsent(key, k -> new HashMap<>()).put(block.getY(), block.getRole().isRoomWall());
+                y2isRoomWall.computeIfAbsent(key, k -> new HashMap<>()).put(block.getY(), block.getRole().isRoomBound());
 //                if (world != null && config.isTestBlockEnabled()) {
 //                    if (block.getRole().isRoomWall())
 //                        world.setBlock(block.getX(), block.getY(), block.getZ(), config.getTestBlockId());
@@ -207,63 +240,29 @@ public class Room {
             }
         }
 
-//        private List<Vector3i> placeblockshere = new ArrayList<>();
-
         private int findArea() {
             Map<Long, Map<Integer, Boolean>> xz2IsRoomWall = xz2IsRoomWall();
             int area = 0;
 
             for (Map.Entry<Long, Map<Integer, Boolean>> entry : xz2IsRoomWall.entrySet()) {
                 Map<Integer, Boolean> isRoomWallMap = entry.getValue();
-//                int x = PositionUtils.unpack2dX(entry.getKey());
-//                int z = PositionUtils.unpack2dZ(entry.getKey());
-//
-//                if (x == 115 && z == 25) {
-//                    LOGGER.atInfo().log("%s", isRoomWallMap.toString());
-//                }
+                List<Integer> ys = new ArrayList<>(isRoomWallMap.keySet());
+                Collections.sort(ys);
 
-                List<Boolean> isRoomWallList = new ArrayList<>();
-
-                int minY = Integer.MAX_VALUE;
-                int maxY = Integer.MIN_VALUE;
-
-                for (Map.Entry<Integer, Boolean> yEntry : isRoomWallMap.entrySet()) {
-                    int y = yEntry.getKey();
-                    boolean b = yEntry.getValue();
-
-                    if (y < minY) {
-                        if (!isRoomWallList.isEmpty()) {
-                            for (int dy = 0; dy < minY - y - 1; dy++) {
-                                isRoomWallList.addFirst(null);
-                            }
-                        } else {
-                            maxY = y;
-                        }
-                        isRoomWallList.addFirst(b);
-                        minY = y;
-                    } else if (y > maxY) {
-                        for (int dy = 0; dy < y - maxY - 1; dy++) {
-                            isRoomWallList.addLast(null);
-                        }
-                        isRoomWallList.addLast(b);
-                        maxY = y;
-                    } else {
-                        int index = y - minY;
-                        isRoomWallList.set(index, b);
-                    }
-                }
-
-                int newArea = 0;
                 int lastWall = 0;
 
-                for (Boolean b : isRoomWallList) {
-                    if (b == null) {
-                        LOGGER.atInfo().log("is room wall is null");
+                for (Integer y : ys) {
+                    if (y == null) {
+                        if (lastWall >= 2) {
+                            area++;
+                        }
+                        lastWall = 0;
                         continue;
                     }
-                    if (b) {
+
+                    if (isRoomWallMap.get(y)) {
                         if (lastWall >= 2) {
-                            newArea++;
+                            area++;
                         }
                         lastWall = 0;
                     } else {
@@ -272,26 +271,15 @@ public class Room {
                 }
 
                 if (lastWall >= 2) {
-                    newArea++;
+                    area++;
                 }
-
-//                if (newArea > 0) {
-//                    LOGGER.atInfo().log("area increased by %d at %d ~ %d", newArea, x, z);
-//                    if (config.isTestBlockEnabled()) {
-//                        for (int dy = 0; dy < newArea; dy++) {
-//                            placeblockshere.add(new Vector3i(x, this.maxY + 2 + dy, z));
-//                        }
-//                    }
-//                }
-
-                area += newArea;
             }
 
             return area;
         }
 
         @Nonnull
-        private List<RoomType> findMatchingRoomTypes(int area, Map<String, Integer> blockId2Count) {
+        private List<RoomType> findMatchingRoomTypes(int area, Map<String, Integer> blockId2Count, Map<String, Integer> wallBlockId2Count, Map<String, Integer> floorBlockId2Count) {
             List<RoomType> matching = new ArrayList<>();
 
             for (RoomType type : RoomType.getAssetMap().getAssetMap().values()) {
@@ -299,14 +287,8 @@ public class Room {
                 boolean matches = true;
 //                LOGGER.atInfo().log("block count: %d", type.getRoomBlocks().length);
                 for (RoomBlockType blockType : type.getRoomBlocks()) {
-                    int count = 0;
-                    for (String matchingBlockId : blockType.getMatchingBlockIds()) {
-//                        if (blockId2Count.getOrDefault(matchingBlockId, 0) > 0) {
-//                            LOGGER.atWarning().log("%s matches pattern %s", matchingBlockId, blockType.getBlockIdPattern().getPattern());
-//                        }
-                        count += blockId2Count.getOrDefault(matchingBlockId, 0);
-                    }
-//                    LOGGER.atInfo().log("%d matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern().getPattern(), blockType.getMinCount(), blockType.getMaxCount());
+                    int count = (int) Math.floor(blockType.getCount(blockId2Count));
+                    LOGGER.atInfo().log("%d matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
                     if (blockType.getMinCount() > count || blockType.getMaxCount() < count) {
                         matches = false;
                         break;
@@ -314,8 +296,30 @@ public class Room {
                 }
 
                 if (matches) {
+                    for (RoomBlockType blockType : type.getWallBlocks()) {
+                        int count = (int) Math.floor(blockType.getCount(wallBlockId2Count));
+                        LOGGER.atInfo().log("(WALL) %d matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
+                        if (blockType.getMinCount() > count || blockType.getMaxCount() < count) {
+                            matches = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (matches) {
+                    for (RoomBlockType blockType : type.getFloorBlocks()) {
+                        int count = (int) Math.floor(blockType.getCount(floorBlockId2Count));
+                        LOGGER.atInfo().log("(WALL) %d matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
+                        if (blockType.getMinCount() > count || blockType.getMaxCount() < count) {
+                            matches = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (matches) {
                     matching.add(type);
-                    LOGGER.atWarning().log("room %s matches", type.getId());
+                    LOGGER.atInfo().log("room %s matches", type.getId());
                 }
             }
 
@@ -323,49 +327,41 @@ public class Room {
         }
 
         @Nonnull
-        private RoomType findRoomType(int area, Map<String, Integer> blockId2Count) {
-            List<RoomType> matching = findMatchingRoomTypes(area, blockId2Count);
-            if (matching.isEmpty()) return RoomType.DEFAULT;
-            if (matching.size() == 1) return matching.getFirst();
-
+        private RoomType findBestRoomType(List<RoomType> matching) {
             RoomType best = null;
 
             for (RoomType type : matching) {
-                best = RoomType.getBetter(type, best);
+                best = RoomType.findBetter(type, best);
             }
 
             return best == null ? RoomType.DEFAULT : best;
         }
 
         @Nonnull
-        private Set<Long> getEncodedBlocks() {
+        private Set<PackedBox> getPackedBoxes() {
             Set<Long> blocks = new HashSet<>();
 
-            for (RoomBlock roomBlock : this.blocks) {
-                blocks.add(PositionUtils.pack3dPos(roomBlock.getPos()));
-            }
-            for (RoomBlock fillerBlock : this.fillerBlocks) {
-                blocks.add(PositionUtils.pack3dPos(fillerBlock.getPos()));
-            }
+            blocks.addAll(this.blocks.keySet());
+            blocks.addAll(this.fillerBlocks.keySet());
 
-            return blocks;
+            return RoomUtils.compress(blocks);
         }
 
-        // TODO: improve this...
-        private int calculateScore(Map<String, Integer> blockId2Count) {
+        private int calculateScore(RoomType roomType, Map<String, Integer> blockId2Count, Map<String, Integer> wallBlockId2Count, Map<String, Integer> floorBlockId2Count) {
             int score = 0;
 
             for (Map.Entry<String, Integer> entry : blockId2Count.entrySet()) {
-                BlockType type = BlockType.getAssetMap().getAsset(entry.getKey());
+                BlockType type = BlockType.fromString(entry.getKey());
                 if (type == null || type.isUnknown()) continue;
                 if (type.getId().equals(BlockType.EMPTY_KEY)) continue;
-                int count = entry.getValue();
 
                 for (ScoreGroup group : ScoreGroup.getAssetMap().getAssetMap().values()) {
                     if (group.matches(type)) {
-                        score += group.getScore() * count;
+                        score += group.getScore() * entry.getValue();
                     }
                 }
+
+                score += roomType.getExtraScore(type.getId(), wallBlockId2Count, floorBlockId2Count) * entry.getValue();
             }
 
             return score;
@@ -392,15 +388,16 @@ public class Room {
         }
 
         public void addBlock(RoomBlock roomBlock) {
+            long key = PositionUtils.pack3dPos(roomBlock.getPos());
             if (roomBlock.isFiller()) {
-                this.fillerBlocks.add(roomBlock);
+                this.fillerBlocks.put(key, roomBlock);
             } else {
-                this.blocks.add(roomBlock);
+                this.blocks.put(key, roomBlock);
             }
         }
 
-        public void removeIf(Predicate<RoomBlock> f) {
-            this.blocks.removeIf(f);
+        public void removeIf(Predicate<Map.Entry<Long, RoomBlock>> f) {
+            this.blocks.entrySet().removeIf(f);
         }
 
         public Room build() throws FailedToDetectRoomException {
@@ -411,12 +408,12 @@ public class Room {
                 throw new FailedToDetectRoomException("Room not heigh enough (min: " + config.getMinRoomHeight() + ", actual: " + height + ").");
 
             int finalMaxY = maxY;
-            removeIf(block -> block.getY() > finalMaxY);
+            removeIf(e -> e.getValue().getY() > finalMaxY);
 
             boolean hasEntrance = false;
             boolean hasLightSource = false;
 
-            for (RoomBlock block : blocks) {
+            for (RoomBlock block : blocks.values()) {
                 if (hasEntrance && hasLightSource) break;
                 if (block.getRole() == RoomBlockRole.ENTRANCE) hasEntrance = true;
                 if (block.getType().getLight() != null) hasLightSource = true;
@@ -435,20 +432,22 @@ public class Room {
                 throw new FailedToDetectRoomException("Could not build room: room has no light source");
 
             int area = findArea();
-            Map<String, Integer> blockId2Count = getBlockId2Count();
-            RoomType type = findRoomType(area, blockId2Count);
-            String id = type.getId() == null ? "Room" : type.getId();
+            TripleOf<Map<String, Integer>> blockId2CountMaps = getBlockId2CountMaps();
+            Map<String, Integer> allBlockIds2Count = blockId2CountMaps.first();
+            Map<String, Integer> wallBlockId2Count = blockId2CountMaps.second();
+            Map<String, Integer> floorBlockId2Count = blockId2CountMaps.third();
+            List<RoomType> matchingRoomTypes = findMatchingRoomTypes(area, allBlockIds2Count, wallBlockId2Count, floorBlockId2Count);
+            RoomType type = findBestRoomType(matchingRoomTypes);
 
-//            World world = Universe.get().getWorld(worldUuid);
-//
-//            if (world != null && config.isTestBlockEnabled()) {
-//                LOGGER.atInfo().log("Would place %d blocks (max y = %d)", placeblockshere.size(), maxY);
-//                for (Vector3i pos : placeblockshere) {
-//                    world.setBlock(pos.x, pos.y, pos.z, config.getTestBlockId());
-//                }
-//            }
+            String[] ids = new String[matchingRoomTypes.size()];
 
-            return new Room(id, worldUuid, calculateScore(blockId2Count), getEncodedBlocks(), area);
+            for (int i = 0; i < matchingRoomTypes.size(); i++) {
+                ids[i] = matchingRoomTypes.get(i).id;
+            }
+
+            int score = calculateScore(type, allBlockIds2Count, wallBlockId2Count, floorBlockId2Count);
+
+            return new Room(type.getId(), ids, worldUuid, score, getPackedBoxes(), allBlockIds2Count, area);
         }
     }
 }

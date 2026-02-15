@@ -23,7 +23,7 @@ Group #Container {
         Style: (HorizontalAlignment: End, VerticalAlignment: End, FontSize: 18, Alignment: End, TextColor: #FFD000);
     }
     Label #Description {
-        Anchor: (Width: 110, Height: 20, Left: 0, Top: 10);
+        Anchor: (Width: 400, Height: 150, Left: 0, Top: 10);
         Text: "<description>";
         Style: (FontSize: 13, TextColor: #cbd5e1);
     }

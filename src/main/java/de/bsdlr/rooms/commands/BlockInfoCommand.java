@@ -1,22 +1,18 @@
 package de.bsdlr.rooms.commands;
 
-import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.shape.Box;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.protocol.Hitbox;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.blockhitbox.BlockBoundingBoxes;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import com.hypixel.hytale.server.core.asset.type.blocktype.config.RotationTuple;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockComponentChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -86,8 +82,8 @@ public class BlockInfoCommand extends AbstractPlayerCommand {
         ctx.sendMessage(Message.raw("is furniture: " + RoomBlockRole.isFurniture(type)));
         ctx.sendMessage(Message.raw("is entrance: " + RoomBlockRole.isEntrance(type)));
         ctx.sendMessage(Message.raw("is window: " + RoomBlockRole.isWindow(type)));
-        ctx.sendMessage(Message.raw("is room wall block: " + RoomBlockRole.isRoomWallBlock(type)));
-        ctx.sendMessage(Message.raw("is room wall: " + RoomBlockRole.isRoomWall(type)));
+        ctx.sendMessage(Message.raw("is room wall block: " + RoomBlockRole.isRoomBoundBlock(type)));
+        ctx.sendMessage(Message.raw("is room wall: " + RoomBlockRole.isRoomBound(type)));
         ctx.sendMessage(Message.raw("block role: " + RoomBlockRole.getRole(type)));
 
 //        Holder<ChunkStore> holder = chunk.getBlockComponentHolder(pos.x, pos.y, pos.z);

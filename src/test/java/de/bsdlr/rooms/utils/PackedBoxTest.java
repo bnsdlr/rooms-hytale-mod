@@ -1,5 +1,6 @@
 package de.bsdlr.rooms.utils;
 
+import com.hypixel.hytale.math.shape.Box;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;

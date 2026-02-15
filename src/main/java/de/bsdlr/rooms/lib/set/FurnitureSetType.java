@@ -12,9 +12,11 @@ import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.codec.schema.metadata.ui.UIEditor;
 import com.hypixel.hytale.codec.schema.metadata.ui.UIRebuildCaches;
 import com.hypixel.hytale.codec.validation.ValidatorCache;
+import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import de.bsdlr.rooms.config.PluginConfig;
 import de.bsdlr.rooms.lib.asset.AssetMapWithGroup;
+import de.bsdlr.rooms.lib.asset.quality.Quality;
 import de.bsdlr.rooms.lib.set.block.FurnitureSetBlockType;
 import de.bsdlr.rooms.lib.set.block.FurnitureSetBlockTypesValidator;
 import de.bsdlr.rooms.utils.ChunkManager;
@@ -27,30 +29,46 @@ public class FurnitureSetType implements JsonAssetWithMap<String, AssetMapWithGr
     public static final AssetBuilderCodec<String, FurnitureSetType> CODEC = AssetBuilderCodec.builder(
                     FurnitureSetType.class, FurnitureSetType::new, Codec.STRING, (t, k) -> t.id = k, t -> t.id, (asset, data) -> asset.data = data, asset -> asset.data
             )
-            .appendInherited(new KeyedCodec<>("RoomTranslationProperties", FurnitureSetTranslationProperties.CODEC),
+            .appendInherited(new KeyedCodec<>("TranslationProperties", FurnitureSetTranslationProperties.CODEC),
                     ((furnitureSetType, s) -> furnitureSetType.translationProperties = s),
                     (furnitureSetType -> furnitureSetType.translationProperties),
                     ((furnitureSetType, parent) -> furnitureSetType.translationProperties = parent.translationProperties))
-            .documentation("The translation properties for this room set.")
+            .documentation("The translation properties for this furniture set.")
             .add()
-            .appendInherited(new KeyedCodec<>("SetBlockTypes", new ArrayCodec<>(FurnitureSetBlockType.CODEC, FurnitureSetBlockType[]::new)),
-                    ((furnitureSetType, s) -> furnitureSetType.furnitureSetBlockTypes = s),
-                    (furnitureSetType -> furnitureSetType.furnitureSetBlockTypes),
-                    ((furnitureSetType, parent) -> furnitureSetType.furnitureSetBlockTypes = parent.furnitureSetBlockTypes)
+            .appendInherited(new KeyedCodec<>("Blocks", new ArrayCodec<>(FurnitureSetBlockType.CODEC, FurnitureSetBlockType[]::new)),
+                    ((furnitureSetType, s) -> furnitureSetType.blocks = s),
+                    (furnitureSetType -> furnitureSetType.blocks),
+                    ((furnitureSetType, parent) -> furnitureSetType.blocks = parent.blocks)
             )
             .addValidator(new FurnitureSetBlockTypesValidator(2, 10))
             .add()
-            .appendInherited(new KeyedCodec<>("Icon", Codec.STRING), (item, s) -> item.icon = s, item -> item.icon, (item, parent) -> item.icon = parent.icon)
+            .appendInherited(new KeyedCodec<>("Icon", Codec.STRING),
+                    (item, s) -> item.icon = s,
+                    item -> item.icon,
+                    (item, parent) -> item.icon = parent.icon)
             .addValidator(PluginConfig.ICON_VALIDATOR)
-            .metadata(new UIEditor(new UIEditor.Icon("Icons/ItemCategories/Build-Furnitures.png", 64, 64)))
+            .metadata(new UIEditor(new UIEditor.Icon("Icons/ItemCategories/Build-Furnitures.png", 32, 32)))
             .metadata(new UIRebuildCaches(UIRebuildCaches.ClientCache.ITEM_ICONS))
+            .add()
+            .appendInherited(new KeyedCodec<>("Quality", Codec.STRING),
+                    (roomType, s) -> roomType.qualityId = s,
+                    roomType -> roomType.qualityId,
+                    (roomType, parent) -> roomType.qualityId = parent.qualityId)
+            .addValidator(Validators.nonNull())
+            .addValidator(Quality.VALIDATOR_CACHE.getValidator())
+            .documentation("Ignore the error... don't know how to prevent it...")
+            .add()
+            .appendInherited(new KeyedCodec<>("Score", Codec.INTEGER),
+                    (roomType, s) -> roomType.score = s,
+                    roomType -> roomType.score,
+                    (roomType, parent) -> roomType.score = parent.score)
             .add()
             .appendInherited(new KeyedCodec<>("Group", Codec.STRING),
                     ((furnitureSetType, s) -> furnitureSetType.group = s),
                     (furnitureSetType -> furnitureSetType.group),
                     ((furnitureSetType, parent) -> furnitureSetType.group = parent.group)
             )
-            .documentation("test documentation")
+//            .documentation("")
             .add()
             .build();
     public static final ValidatorCache<String> VALIDATOR_CACHE = new ValidatorCache<>(new AssetKeyValidator<>(FurnitureSetType::getAssetStore));
@@ -66,8 +84,10 @@ public class FurnitureSetType implements JsonAssetWithMap<String, AssetMapWithGr
     protected AssetExtraInfo.Data data;
     protected FurnitureSetTranslationProperties translationProperties;
     protected String icon = "Icons/ItemCategories/Build-Furnitures.png";
+    protected String qualityId = Quality.COMMON_ID;
+    protected int score = 0;
     protected String group;
-    protected FurnitureSetBlockType[] furnitureSetBlockTypes;
+    protected FurnitureSetBlockType[] blocks;
 
     @Nullable
     public static FurnitureSetType fromString(@Nonnull String input) {
@@ -100,11 +120,11 @@ public class FurnitureSetType implements JsonAssetWithMap<String, AssetMapWithGr
         this.translationProperties = other.translationProperties;
         this.icon = other.icon;
         this.group = other.group;
-        this.furnitureSetBlockTypes = other.furnitureSetBlockTypes;
+        this.blocks = other.blocks;
     }
 
     public boolean isValidAt(ChunkManager chunkManager, int x, int y, int z) {
-        for (FurnitureSetBlockType furnitureSetBlockType : furnitureSetBlockTypes) {
+        for (FurnitureSetBlockType furnitureSetBlockType : blocks) {
             int bx = x + furnitureSetBlockType.getXOffset();
             int by = y + furnitureSetBlockType.getYOffset();
             int bz = z + furnitureSetBlockType.getZOffset();
@@ -140,8 +160,8 @@ public class FurnitureSetType implements JsonAssetWithMap<String, AssetMapWithGr
         return group;
     }
 
-    public FurnitureSetBlockType[] getFurnitureSetBlockTypes() {
-        return furnitureSetBlockTypes;
+    public FurnitureSetBlockType[] getBlocks() {
+        return blocks;
     }
 
     @Nonnull
