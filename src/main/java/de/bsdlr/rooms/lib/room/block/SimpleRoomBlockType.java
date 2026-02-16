@@ -30,7 +30,6 @@ public class SimpleRoomBlockType {
                     ((roomBlockType, parent) -> roomBlockType.countsAs = parent.countsAs)
             )
             .add()
-            .afterDecode(SimpleRoomBlockType::addMatchingBlockIds)
             .build();
     @Nonnull
     protected String blockIdPattern = "*";
@@ -38,7 +37,8 @@ public class SimpleRoomBlockType {
 
     private String[] blockIds;
 
-    SimpleRoomBlockType() {}
+    SimpleRoomBlockType() {
+    }
 
     public SimpleRoomBlockType(@Nonnull SimpleRoomBlockType o) {
         this.blockIdPattern = o.blockIdPattern;
@@ -46,30 +46,26 @@ public class SimpleRoomBlockType {
         this.blockIds = o.blockIds;
     }
 
-    @Nonnull
-    public static List<String> getMatchingBlockIds(@Nonnull String blockIdPattern) {
-        List<String> matchingBlockIds = new ArrayList<>();
-
-        for (String blockId : BlockType.getAssetMap().getAssetMap().keySet()) {
-            if (StringUtil.isGlobMatching(blockIdPattern, blockId)) {
-                matchingBlockIds.add(blockId);
-            }
-        }
-
-        return matchingBlockIds;
+    public static void addMatchingBlockIds(@Nonnull SimpleRoomBlockType simpleRoomBlockType) {
+        addMatchingBlockIds(simpleRoomBlockType, new String[]{"*"});
     }
 
-    public static void addMatchingBlockIds(SimpleRoomBlockType simpleRoomBlockType) {
-        try {
-            simpleRoomBlockType.blockIds =
-                    RoomBlockType.getMatchingBlockIds(simpleRoomBlockType.getBlockIdPattern()).toArray(new String[0]);
-        } catch (Exception e) {
-            LOGGER.atSevere().withCause(e).log("Could not find matching block ids.");
-            throw e;
-        }
+    public static void addMatchingBlockIds(@Nonnull SimpleRoomBlockType simpleRoomBlockType, @Nonnull String[] allowedBlockIdPatterns) {
+        simpleRoomBlockType.blockIds =
+                RoomBlockType.getMatchingBlockIds(simpleRoomBlockType.getBlockIdPattern(), allowedBlockIdPatterns).stream().filter(id -> {
+                    boolean matches = false;
+                    for (String allowedBlockIdPattern : allowedBlockIdPatterns) {
+                        if (StringUtil.isGlobMatching(allowedBlockIdPattern, id)) {
+                            matches = true;
+                            break;
+                        }
+                    }
+                    return matches;
+                }).toArray(String[]::new);
     }
 
     public String[] getMatchingBlockIds() {
+        if (blockIds == null) addMatchingBlockIds(this);
         return blockIds;
     }
 

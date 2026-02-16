@@ -4,7 +4,6 @@ import com.hypixel.hytale.math.vector.Vector2i;
 import com.hypixel.hytale.math.vector.Vector3i;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 public class RoomUtils {
     public static Set<PackedBox> compress(Set<Long> blocks) {
@@ -181,7 +180,7 @@ public class RoomUtils {
         Set<Long> blocks = new HashSet<>();
 
         for (PackedBox box : boxes) {
-            box.getAllPositionsStream().forEach(blocks::add);
+            box.getLongStream().forEach(blocks::add);
         }
 
         return blocks;

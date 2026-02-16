@@ -16,11 +16,14 @@ import de.bsdlr.rooms.lib.exceptions.WorldChunkNullException;
 import de.bsdlr.rooms.lib.room.block.RoomBlock;
 import de.bsdlr.rooms.lib.room.block.RoomBlockRole;
 import de.bsdlr.rooms.utils.ChunkManager;
+import de.bsdlr.rooms.utils.PackedBox;
 import de.bsdlr.rooms.utils.PositionUtils;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 public class RoomDetector {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
@@ -47,7 +50,7 @@ public class RoomDetector {
         CompletableFuture<Room> future = new CompletableFuture<>();
 
         LOGGER.atInfo().log("Executing on world thread.");
-        if (room.getBlocks().contains(key)) {
+        if (room.containsPos(key)) {
             world.execute(() -> {
                 try {
                     Room r = getRoomAt(world, pos.x, pos.y, pos.z);
@@ -61,13 +64,17 @@ public class RoomDetector {
             world.execute(() -> {
                 ChunkManager chunkManager = new ChunkManager(world);
 
-                for (Long k : room.getBlocks()) {
-                    int bx = PositionUtils.unpack3dX(k);
-                    int by = PositionUtils.unpack3dY(k);
-                    int bz = PositionUtils.unpack3dZ(k);
-                    BlockType type = chunkManager.getBlockTypeAt(bx, by, bz);
-                    if (!RoomBlockRole.isRoomBound(type)) {
-                        future.complete(getRoomAt(world, bx, by, bz));
+                for (PackedBox box : room.getBoxes()) {
+                    Stream<Vector3i> stream = box.getVector3iStream();
+                    Optional<Vector3i> block = stream.filter(v -> {
+                        BlockType type = chunkManager.getBlockTypeAt(v.x, v.y, v.z);
+                        return !RoomBlockRole.isRoomBound(type);
+                    }).findAny();
+
+                    if (block.isPresent()) {
+                        Vector3i b = block.get();
+                        future.complete(getRoomAt(world, b.x, b.y, b.z));
+                        break;
                     }
                 }
             });
@@ -87,8 +94,9 @@ public class RoomDetector {
 //                int bx = dx + x;
 //                int by = dy + y;
 //                int bz = dz + z;
-////                        ctx.sendMessage(Message.raw("pos: " + bx + " " + by + " " + bz));
-////                        world.setBlock(bx, by, bz, "Rock_Stone");
+
+    /// /                        ctx.sendMessage(Message.raw("pos: " + bx + " " + by + " " + bz));
+    /// /                        world.setBlock(bx, by, bz, "Rock_Stone");
 //                return getRoomAt(world, bx, by, bz);
 //            } catch (FailedToDetectRoomException e) {
 //                LOGGER.atWarning().withCause(e).log(e.getMessage());
@@ -96,7 +104,6 @@ public class RoomDetector {
 //            }
 //        }, HashSet::new);
 //    }
-
     public static Room getRoomAt(World world, int x, int y, int z) throws FailedToDetectRoomException, WorldChunkNullException {
         return getRoomAt(world, x, y, z, null);
     }

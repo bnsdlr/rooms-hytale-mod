@@ -94,7 +94,7 @@ public class RoomManager {
             try {
                 Room detectedRoom = RoomDetector.getRoomAt(world, bx, by, bz, overrideBlocks);
 
-                LOGGER.atInfo().log("detected room: %s", detectedRoom);
+                LOGGER.atInfo().log("detected room: %s (at %d %d %d)", detectedRoom, bx, by, bz);
 
                 if (room != null) {
                     if (!room.equals(detectedRoom)) {

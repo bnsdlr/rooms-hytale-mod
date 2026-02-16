@@ -10,6 +10,7 @@ import de.bsdlr.rooms.utils.PositionUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public enum RoomBlockRole {
     ENTRANCE,
@@ -51,21 +52,37 @@ public enum RoomBlockRole {
         return this == RoomBlockRole.UNKNOWN;
     }
 
-    public static void isSolid(RoomBlockType roomBlockType, ValidationResults results) {
-        List<String> notSolidMatches = new ArrayList<>();
-
-        for (String id : roomBlockType.getMatchingBlockIds()) {
-            BlockType type = BlockType.getAssetMap().getAsset(id);
-            if (type == null || type.isUnknown()) continue;
-            if (!isSolidBlock(type)) {
-                notSolidMatches.add(type.getId());
-            }
-        }
-
-        if (!notSolidMatches.isEmpty()) {
-            results.fail("There is a non solid block matching: " + notSolidMatches);
-        }
-    }
+//    public static void isSolid(BoundRoomBlockType roomBlockType, ValidationResults results) {
+//        List<String> notSolidMatches = new ArrayList<>();
+//
+//        for (String id : roomBlockType.getMatchingBlockIds()) {
+//            BlockType type = BlockType.getAssetMap().getAsset(id);
+//            if (type == null || type.isUnknown()) continue;
+//            if (!isSolidBlock(type)) {
+//                notSolidMatches.add(type.getId());
+//            }
+//        }
+//
+//        if (!notSolidMatches.isEmpty()) {
+//            StringBuilder builder = new StringBuilder();
+//            builder.append("There is a non solid block matching: ");
+//
+//            int count = 0;
+//            for (String notSolidMatch : notSolidMatches) {
+//                if (count > 5) {
+//                    builder.append(", ...");
+//                    break;
+//                }
+//                if (count != 0) {
+//                    builder.append(", ");
+//                }
+//                builder.append(notSolidMatch);
+//                count++;
+//            }
+//
+//            results.fail(builder.toString());
+//        }
+//    }
 
     public static RoomBlockRole getRole(BlockType type) {
         if (type == null || type.isUnknown()) return RoomBlockRole.UNKNOWN;

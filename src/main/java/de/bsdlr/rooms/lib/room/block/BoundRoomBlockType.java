@@ -3,8 +3,6 @@ package de.bsdlr.rooms.lib.room.block;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
-import com.hypixel.hytale.codec.validation.ValidatorCache;
 import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.common.util.StringUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -15,11 +13,11 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-public class RoomBlockType {
+public class BoundRoomBlockType {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-    public static final ValidatorCache<RoomBlockType> VALIDATOR_CACHE = new ValidatorCache<>(new RoomBlockTypeValidator());
-    public static final BuilderCodec<RoomBlockType> CODEC = BuilderCodec.builder(RoomBlockType.class, RoomBlockType::new)
+    public static final BuilderCodec<BoundRoomBlockType> CODEC = BuilderCodec.builder(BoundRoomBlockType.class, BoundRoomBlockType::new)
             .appendInherited(new KeyedCodec<>("BlockIdPattern", Codec.STRING),
                     ((roomBlockType, s) -> roomBlockType.blockIdPattern = s),
                     (roomBlockType -> roomBlockType.blockIdPattern),
@@ -27,6 +25,22 @@ public class RoomBlockType {
             )
             .addValidator(Validators.nonNull())
             .addValidator(PatternValidator.BLOCK_TYPE_KEYS_VALIDATOR)
+            .add()
+            .appendInherited(new KeyedCodec<>("MinPercentage", Codec.DOUBLE),
+                    ((roomBlockType, s) -> roomBlockType.minPercentage = s),
+                    (roomBlockType -> roomBlockType.minPercentage),
+                    ((roomBlockType, parent) -> roomBlockType.minPercentage = parent.minPercentage)
+            )
+            .addValidator(Validators.min(0.0))
+            .addValidator(Validators.max(100.0))
+            .add()
+            .appendInherited(new KeyedCodec<>("MaxPercentage", Codec.DOUBLE),
+                    ((roomBlockType, s) -> roomBlockType.maxPercentage = s),
+                    (roomBlockType -> roomBlockType.maxPercentage),
+                    ((roomBlockType, parent) -> roomBlockType.maxPercentage = parent.maxPercentage)
+            )
+            .addValidator(Validators.min(0.0))
+            .addValidator(Validators.max(100.0))
             .add()
             .appendInherited(new KeyedCodec<>("MinCount", Codec.INTEGER),
                     ((roomBlockType, s) -> roomBlockType.minCount = s),
@@ -41,30 +55,25 @@ public class RoomBlockType {
                     ((roomBlockType, parent) -> roomBlockType.maxCount = parent.maxCount)
             )
             .add()
-            .appendInherited(new KeyedCodec<>("LogicOrs", new ArrayCodec<>(SimpleRoomBlockType.CODEC, SimpleRoomBlockType[]::new)),
-                    ((roomBlockType, s) -> roomBlockType.logicOrs = s),
-                    (roomBlockType -> roomBlockType.logicOrs),
-                    ((roomBlockType, parent) -> roomBlockType.logicOrs = parent.logicOrs)
-            )
-            .documentation("All counts are added and used to check if enough (and not to much) blocks are present.")
-            .add()
             .build();
     @Nonnull
     protected String blockIdPattern = "*";
+    protected double minPercentage = 0;
+    protected double maxPercentage = 1.0;
     protected int minCount = 1;
     protected int maxCount = Integer.MAX_VALUE;
-    protected SimpleRoomBlockType[] logicOrs = new SimpleRoomBlockType[0];
 
     private String[] blockIds = null;
 
-    public RoomBlockType() {
+    public BoundRoomBlockType() {
     }
 
-    public RoomBlockType(@Nonnull RoomBlockType other) {
+    public BoundRoomBlockType(@Nonnull BoundRoomBlockType other) {
         this.blockIdPattern = other.blockIdPattern;
+        this.minPercentage = other.minPercentage;
+        this.maxPercentage = other.maxPercentage;
         this.minCount = other.minCount;
         this.maxCount = other.maxCount;
-        this.logicOrs = other.logicOrs;
         this.blockIds = other.blockIds;
     }
 
@@ -86,26 +95,26 @@ public class RoomBlockType {
             }
 
             if (matches) {
-                matchingBlockIds.add(blockId);
+                BlockType type = BlockType.getAssetMap().getAsset(blockId);
+
+                if (type == null) continue;
+
+                if (RoomBlockRole.getRole(type).isSolid()) {
+                    matchingBlockIds.add(blockId);
+                }
             }
         }
 
         return matchingBlockIds;
     }
 
-    public static void addMatchingBlockIds(@Nonnull RoomBlockType roomBlockType) {
-        addMatchingBlockIds(roomBlockType, null);
+    public static void addMatchingBlockIds(@Nonnull BoundRoomBlockType roomBlockType) {
+        addMatchingBlockIds(roomBlockType, new String[]{"*"});
     }
 
-    public static void addMatchingBlockIds(@Nonnull RoomBlockType roomBlockType, String[] allowedBlockIdPatterns) {
+    public static void addMatchingBlockIds(@Nonnull BoundRoomBlockType roomBlockType, @Nonnull String[] allowedBlockIdPatterns) {
         roomBlockType.blockIds =
-                RoomBlockType.getMatchingBlockIds(roomBlockType.getBlockIdPattern(), allowedBlockIdPatterns).toArray(String[]::new);
-    }
-
-    public static void addMatchingBlockIdsForLogicOrs(RoomBlockType roomBlockType, String[] allowedBlockIdPatterns) {
-        for (SimpleRoomBlockType simpleRoomBlockType : roomBlockType.logicOrs) {
-            SimpleRoomBlockType.addMatchingBlockIds(simpleRoomBlockType, allowedBlockIdPatterns);
-        }
+                BoundRoomBlockType.getMatchingBlockIds(roomBlockType.getBlockIdPattern(), allowedBlockIdPatterns).toArray(String[]::new);
     }
 
     public boolean matches(String blockId) {
@@ -122,6 +131,14 @@ public class RoomBlockType {
         return blockIdPattern;
     }
 
+    public double getMinPercentage() {
+        return minPercentage;
+    }
+
+    public double getMaxPercentage() {
+        return maxPercentage;
+    }
+
     public int getMinCount() {
         return minCount;
     }
@@ -130,25 +147,12 @@ public class RoomBlockType {
         return maxCount;
     }
 
-    public SimpleRoomBlockType[] getLogicOrs() {
-        return logicOrs;
-    }
-
     public double getCount(Map<String, Integer> blockId2Count) {
         double count = 0;
 
         for (String matchingBlockId : getMatchingBlockIds()) {
             count += blockId2Count.getOrDefault(matchingBlockId, 0);
 //            if (blockId2Count.getOrDefault(matchingBlockId, 0) > 0) LOGGER.atInfo().log("%s count: %f", matchingBlockId, count);
-        }
-
-        if (logicOrs != null) {
-            for (SimpleRoomBlockType or : logicOrs) {
-                for (String matchingBlockId : or.getMatchingBlockIds()) {
-                    count += blockId2Count.getOrDefault(matchingBlockId, 0) * or.countsAs;
-//                    if (blockId2Count.getOrDefault(matchingBlockId, 0) * or.countsAs > 0) LOGGER.atInfo().log("or %s count: %f", matchingBlockId, count);
-                }
-            }
         }
 
         return count;

@@ -5,15 +5,11 @@
 
 ## ToDo
 
-- [ ] compress room positions instead of uncompressed (use packedbox not long)
-
-- [ ] half a block precision for detecting current room (x and z)
 - [ ] rooms
     - [ ] more complex room definitions
       - [x] block that matches regex
       - [ ] blocks of group
       - [ ] block type
-      - [ ] conditional block (sth like or)
     - [ ] buffs for having room
     - [ ] requirements
 - [ ] sets 

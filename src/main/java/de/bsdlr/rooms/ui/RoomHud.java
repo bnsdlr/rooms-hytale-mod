@@ -60,10 +60,9 @@ public class RoomHud extends CustomUIHud {
         LOGGER.atInfo().log("description: %s", description);
         updateName(Message.raw(name).color(type.getColorOrFallback().toString()));
         updateScore(room.getScore());
-        updateDescription(description == null ? String.format("area: %d\nfloor blocks: %d\nwall blocks: %d",
+        updateDescription(description == null ? String.format("area: %d\nall blocks: %d",
                 room.getArea(),
-                room.getFloorBlockMap().values().stream().reduce(Integer::sum).get(),
-                room.getWallBlockMap().values().stream().reduce(Integer::sum).get()) : description);
+                room.getBlockMap().values().stream().reduce(Integer::sum).get()) : description);
 //        update(SCORE_ID + TEXT_SPANS, Message.raw(room.getScore() + " (" + room.getArea() + ")"));
     }
 

@@ -15,6 +15,7 @@ import de.bsdlr.rooms.RoomsPlugin;
 import de.bsdlr.rooms.config.PluginConfig;
 import de.bsdlr.rooms.lib.asset.score.ScoreGroup;
 import de.bsdlr.rooms.lib.exceptions.FailedToDetectRoomException;
+import de.bsdlr.rooms.lib.room.block.BoundRoomBlockType;
 import de.bsdlr.rooms.lib.room.block.RoomBlock;
 import de.bsdlr.rooms.lib.room.block.RoomBlockRole;
 import de.bsdlr.rooms.lib.room.block.RoomBlockType;
@@ -157,6 +158,18 @@ public class Room {
         return validated;
     }
 
+    public boolean containsPos(long key) {
+        int x = PositionUtils.unpack3dX(key);
+        int y = PositionUtils.unpack3dY(key);
+        int z = PositionUtils.unpack3dZ(key);
+
+        return containsPos(x, y, z);
+    }
+
+    public boolean containsPos(Vector3i pos) {
+        return containsPos(pos.x, pos.y, pos.z);
+    }
+
     public boolean containsPos(int x, int y, int z) {
         for (PackedBox box : boxes) {
             if (box.containsPos(x, y, z)) return true;
@@ -281,6 +294,15 @@ public class Room {
         @Nonnull
         private List<RoomType> findMatchingRoomTypes(int area, Map<String, Integer> blockId2Count, Map<String, Integer> wallBlockId2Count, Map<String, Integer> floorBlockId2Count) {
             List<RoomType> matching = new ArrayList<>();
+            int wallBlockCount = wallBlockId2Count.values().stream().reduce(Integer::sum).orElse(0);
+            int floorBlockCount = floorBlockId2Count.values().stream().reduce(Integer::sum).orElse(0);
+
+            if (wallBlockCount == 0) {
+                LOGGER.atSevere().log("There are no wall blocks.");
+            }
+            if (floorBlockCount == 0) {
+                LOGGER.atSevere().log("There are no floor blocks.");
+            }
 
             for (RoomType type : RoomType.getAssetMap().getAssetMap().values()) {
                 if (type.minArea > area) continue;
@@ -296,10 +318,14 @@ public class Room {
                 }
 
                 if (matches) {
-                    for (RoomBlockType blockType : type.getWallBlocks()) {
-                        int count = (int) Math.floor(blockType.getCount(wallBlockId2Count));
-                        LOGGER.atInfo().log("(WALL) %d matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
-                        if (blockType.getMinCount() > count || blockType.getMaxCount() < count) {
+                    for (BoundRoomBlockType blockType : type.getWallBlocks()) {
+                        double count = blockType.getCount(wallBlockId2Count);
+                        LOGGER.atInfo().log("(WALL) %f matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
+
+                        double percentage = (count / wallBlockCount) * 100;
+                        LOGGER.atInfo().log("%f / %d = %f", count, wallBlockCount, percentage);
+
+                        if (blockType.getMinPercentage() > percentage || blockType.getMaxPercentage() < percentage || blockType.getMinCount() > count || blockType.getMaxCount() < count) {
                             matches = false;
                             break;
                         }
@@ -307,10 +333,14 @@ public class Room {
                 }
 
                 if (matches) {
-                    for (RoomBlockType blockType : type.getFloorBlocks()) {
-                        int count = (int) Math.floor(blockType.getCount(floorBlockId2Count));
-                        LOGGER.atInfo().log("(WALL) %d matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
-                        if (blockType.getMinCount() > count || blockType.getMaxCount() < count) {
+                    for (BoundRoomBlockType blockType : type.getFloorBlocks()) {
+                        double count = blockType.getCount(floorBlockId2Count);
+                        LOGGER.atInfo().log("(FLOOR) %f matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
+
+                        double percentage = (count / floorBlockCount) * 100;
+                        LOGGER.atInfo().log("%f / %d = %f", count, floorBlockCount, percentage);
+
+                        if (blockType.getMinPercentage() > percentage || blockType.getMaxPercentage() < percentage || blockType.getMinCount() > count || blockType.getMaxCount() < count) {
                             matches = false;
                             break;
                         }

@@ -20,12 +20,6 @@ public class ChunkManager {
         this.world = world;
     }
 
-    public ChunkAccessor getChunkAccessorFromBlock(int blockX, int blockZ) {
-        WorldChunk chunk = getChunkFromBlock(blockX, blockZ);
-        if (chunk == null) return null;
-        return chunk.getChunkAccessor();
-    }
-
     public WorldChunk getChunkFromBlock(int blockX, int blockZ) {
         return getChunk(ChunkUtil.indexChunkFromBlock(blockX, blockZ));
     }

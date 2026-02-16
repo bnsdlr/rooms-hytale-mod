@@ -21,13 +21,16 @@ public class PositionUtils {
     }
 
     public static void forOffsetInRadius(Vector3i radius, int offSetX, int offSetY, int offSetZ, TriFunction<Integer, Integer, Integer, Void> f) {
-        int rx = radius.x + offSetX;
-        int ry = radius.y + offSetY;
-        int rz = radius.z + offSetZ;
+        int minRX = offSetX - radius.x + 1;
+        int minRY = offSetY - radius.y + 1;
+        int minRZ = offSetZ - radius.z + 1;
+        int maxRX = offSetX + radius.x;
+        int maxRY = offSetY + radius.y;
+        int maxRZ = offSetZ + radius.z;
 
-        for (int dx = -rx + 1; dx < rx; dx++) {
-            for (int dy = -ry + 1; dy < ry; dy++) {
-                for (int dz = -rz + 1; dz < rz; dz++) {
+        for (int dx = minRX; dx < maxRX; dx++) {
+            for (int dy = minRY; dy < maxRY; dy++) {
+                for (int dz = minRZ; dz < maxRZ; dz++) {
                     f.accept(dx, dy, dz);
                 }
             }
@@ -44,13 +47,17 @@ public class PositionUtils {
 
     public static <R, C extends Collection<R>> C forOffsetInRadius(Vector3i radius, int offSetX, int offSetY, int offSetZ, TriFunction<Integer, Integer, Integer, R> f, Supplier<C> supplier) {
         C results = supplier.get();
-        int rx = radius.x + offSetX;
-        int ry = radius.y + offSetY;
-        int rz = radius.z + offSetZ;
 
-        for (int dx = -rx + 1; dx < rx; dx++) {
-            for (int dy = -ry + 1; dy < ry; dy++) {
-                for (int dz = -rz + 1; dz < rz; dz++) {
+        int minRX = offSetX - radius.x + 1;
+        int minRY = offSetY - radius.y + 1;
+        int minRZ = offSetZ - radius.z + 1;
+        int maxRX = offSetX + radius.x;
+        int maxRY = offSetY + radius.y;
+        int maxRZ = offSetZ + radius.z;
+
+        for (int dx = minRX; dx < maxRX; dx++) {
+            for (int dy = minRY; dy < maxRY; dy++) {
+                for (int dz = minRZ; dz < maxRZ; dz++) {
                     R value = f.accept(dx, dy, dz);
                     if (value != null) {
                         results.add(value);

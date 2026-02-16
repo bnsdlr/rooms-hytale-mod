@@ -43,7 +43,7 @@ public class RoomsCommand extends AbstractPlayerCommand {
             RoomManager roomManager = RoomsPlugin.get().getRoomManagerAndComputeIfAbsent(world.getWorldConfig().getUuid());
             roomManager.addRoom(room);
 
-            ctx.sendMessage(Message.raw("room block count: " + room.getBlocks().size()));
+//            ctx.sendMessage(Message.raw("room block count: " + room.getBlocks().size()));
         } catch (FailedToDetectRoomException e) {
             ctx.sendMessage(Message.raw(e.getMessage()));
             LOGGER.atWarning().log(e.getMessage());

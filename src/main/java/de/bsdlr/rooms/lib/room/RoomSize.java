@@ -18,6 +18,7 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class RoomSize implements JsonAssetWithMap<String, IndexedLookupTableAssetMap<String, RoomSize>> {
     public static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
@@ -47,6 +48,14 @@ public class RoomSize implements JsonAssetWithMap<String, IndexedLookupTableAsse
                     (roomSize -> roomSize.prefix),
                     ((roomSize, parent) -> roomSize.prefix = parent.prefix))
             .add()
+            .validator(((roomSize, results) -> {
+                for (RoomSize size : RoomSize.getAssetMap().getAssetMap().values()) {
+                    if (Objects.equals(size.id, RoomSize.DEFAULT_KEY) || size.id.equals(roomSize.id)) continue;
+                    if (roomSize.minArea == size.minArea) {
+                        results.fail("There should not be duplicate min areas for RoomSizes (" + size.id + " has the same min area).");
+                    }
+                }
+            }))
             .build();
     public static final ValidatorCache<String> VALIDATOR_CACHE = new ValidatorCache<>(new AssetKeyValidator<>(RoomSize::getAssetStore));
     private static AssetStore<String, RoomSize, IndexedLookupTableAssetMap<String, RoomSize>> ASSET_STORE;

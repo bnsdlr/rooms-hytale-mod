@@ -3,7 +3,6 @@ package de.bsdlr.rooms.utils;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.math.shape.Box;
 import com.hypixel.hytale.math.vector.Vector2i;
 import com.hypixel.hytale.math.vector.Vector3i;
 
@@ -11,6 +10,8 @@ import javax.annotation.Nonnull;
 import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.Vector;
+import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -168,7 +169,60 @@ public class PackedBox {
         }
     }
 
-    public LongStream getAllPositionsStream() {
+    public Stream<Vector3i> getVector3iStream() {
+        if (hi == UNUSED_HI || lo == hi) {
+            return Stream.of(unpackLo());
+        }
+
+        int lx = PositionUtils.unpack3dX(lo);
+        int ly = PositionUtils.unpack3dY(lo);
+        int lz = PositionUtils.unpack3dZ(lo);
+        int hx = PositionUtils.unpack3dX(hi);
+        int hy = PositionUtils.unpack3dY(hi);
+        int hz = PositionUtils.unpack3dZ(hi);
+
+        int xDiff = diff(lx, hx);
+        int yDiff = diff(ly, hy);
+        int zDiff = diff(lz, hz);
+
+        int minX = Math.min(lx, hx);
+        int minY = Math.min(ly, hy);
+        int minZ = Math.min(lz, hz);
+
+        long size = (long) xDiff * yDiff * zDiff;
+
+        Spliterator<Vector3i> spliterator = new Spliterators.AbstractSpliterator<Vector3i>(
+                size,
+                Spliterator.ORDERED | Spliterator.SIZED | Spliterator.IMMUTABLE
+        ) {
+            int dx = 0, dy = 0, dz = 0;
+
+            @Override
+            public boolean tryAdvance(Consumer<? super Vector3i> action) {
+                if (dy >= yDiff) {
+                    return false;
+                }
+
+                action.accept(new Vector3i(minX + dx, minY + dy, minZ + dz));
+
+                dz++;
+                if (dz >= zDiff) {
+                    dz = 0;
+                    dx++;
+                    if (dx >= xDiff) {
+                        dx = 0;
+                        dy++;
+                    }
+                }
+
+                return true;
+            }
+        };
+
+        return StreamSupport.stream(spliterator, false);
+    }
+
+    public LongStream getLongStream() {
         if (hi == UNUSED_HI || lo == hi) {
             return LongStream.of(lo);
         }

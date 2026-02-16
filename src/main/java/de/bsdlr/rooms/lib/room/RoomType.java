@@ -10,18 +10,16 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.codec.schema.metadata.ui.UIEditor;
 import com.hypixel.hytale.codec.schema.metadata.ui.UIRebuildCaches;
+import com.hypixel.hytale.codec.validation.ValidationResults;
 import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.codec.validation.validator.ArrayValidator;
 import com.hypixel.hytale.protocol.Color;
-import com.hypixel.hytale.server.core.event.events.ecs.UseBlockEvent;
 import de.bsdlr.rooms.config.PluginConfig;
 import de.bsdlr.rooms.lib.asset.AssetMapWithGroup;
+import de.bsdlr.rooms.lib.asset.pattern.PatternValidator;
 import de.bsdlr.rooms.lib.asset.quality.Quality;
 import de.bsdlr.rooms.lib.blocks.PreferredBlockType;
-import de.bsdlr.rooms.lib.room.block.RoomBlock;
-import de.bsdlr.rooms.lib.room.block.RoomBlockRole;
-import de.bsdlr.rooms.lib.room.block.RoomBlockType;
-import de.bsdlr.rooms.lib.room.block.RoomBlockTypeValidator;
+import de.bsdlr.rooms.lib.room.block.*;
 import de.bsdlr.rooms.lib.set.FurnitureSetType;
 
 import javax.annotation.Nonnull;
@@ -39,6 +37,15 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
             )
             .documentation("Priority of this room, if there are other matching rooms the one with the higher required blocks or priority will be chosen.")
             .add()
+            .appendInherited(new KeyedCodec<>("AllowedBlockIdPattern", Codec.STRING_ARRAY),
+                    ((roomType, s) -> roomType.allowedBlockIdPatterns = s),
+                    (roomType -> roomType.allowedBlockIdPatterns),
+                    ((roomType, parent) -> roomType.allowedBlockIdPatterns = parent.allowedBlockIdPatterns)
+            )
+            .addValidator(Validators.nonNull())
+            .addValidator(Validators.nonNullArrayElements())
+            .addValidator(new ArrayValidator<>(PatternValidator.BLOCK_TYPE_KEYS_VALIDATOR))
+            .add()
             .appendInherited(new KeyedCodec<>("RoomBlocks", new ArrayCodec<>(RoomBlockType.CODEC, RoomBlockType[]::new)),
                     ((roomType, s) -> roomType.roomBlocks = s),
                     (roomType -> roomType.roomBlocks),
@@ -47,21 +54,21 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
             .documentation("Required Blocks in the room.")
             .addValidator(RoomBlockType.VALIDATOR_CACHE.getArrayValidator())
             .add()
-            .appendInherited(new KeyedCodec<>("FloorBlocks", new ArrayCodec<>(RoomBlockType.CODEC, RoomBlockType[]::new)),
+            .appendInherited(new KeyedCodec<>("FloorBlocks", new ArrayCodec<>(BoundRoomBlockType.CODEC, BoundRoomBlockType[]::new)),
                     ((roomType, s) -> roomType.floorBlocks = s),
                     (roomType -> roomType.floorBlocks),
                     ((roomType, parent) -> roomType.floorBlocks = parent.floorBlocks)
             )
             .documentation("Required Floor blocks.")
-            .addValidator(new ArrayValidator<>(new RoomBlockTypeValidator(RoomBlockRole::isSolid)))
+            .addValidator(new ArrayValidator<>(new BoundRoomBlockTypeValidator()))
             .add()
-            .appendInherited(new KeyedCodec<>("WallBlocks", new ArrayCodec<>(RoomBlockType.CODEC, RoomBlockType[]::new)),
+            .appendInherited(new KeyedCodec<>("WallBlocks", new ArrayCodec<>(BoundRoomBlockType.CODEC, BoundRoomBlockType[]::new)),
                     ((roomType, s) -> roomType.wallBlocks = s),
                     (roomType -> roomType.wallBlocks),
                     ((roomType, parent) -> roomType.wallBlocks = parent.wallBlocks)
             )
             .documentation("Required wall blocks.")
-            .addValidator(new ArrayValidator<>(new RoomBlockTypeValidator(RoomBlockRole::isSolid)))
+            .addValidator(new ArrayValidator<>(new BoundRoomBlockTypeValidator()))
             .add()
             .appendInherited(new KeyedCodec<>("PreferredWallBlocks", new ArrayCodec<>(PreferredBlockType.CODEC, PreferredBlockType[]::new)),
                     ((roomType, s) -> roomType.preferredWallBlocks = s),
@@ -131,6 +138,21 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
             .addValidator(RoomSize.VALIDATOR_CACHE.getArrayValidator())
             .addValidator(Validators.nonNullArrayElements())
             .add()
+            .afterDecode(roomType -> {
+                for (RoomBlockType roomBlockType : roomType.roomBlocks) {
+                    RoomBlockType.addMatchingBlockIds(roomBlockType, roomType.allowedBlockIdPatterns);
+                    RoomBlockType.addMatchingBlockIdsForLogicOrs(roomBlockType, roomType.allowedBlockIdPatterns);
+                }
+                for (BoundRoomBlockType roomBlockType : roomType.wallBlocks) {
+                    BoundRoomBlockType.addMatchingBlockIds(roomBlockType, roomType.allowedBlockIdPatterns);
+                }
+                for (BoundRoomBlockType roomBlockType : roomType.wallBlocks) {
+                    BoundRoomBlockType.addMatchingBlockIds(roomBlockType, roomType.allowedBlockIdPatterns);
+                }
+            })
+//            .validator(((roomType, results) -> {
+//
+//            }))
             .build();
     public static final String DEFAULT_KEY = "Room";
     public static final RoomType DEFAULT = new RoomType(DEFAULT_KEY);
@@ -146,9 +168,10 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
     protected boolean unknown = false;
     protected AssetExtraInfo.Data data;
     protected RoomTranslationProperties translationProperties;
+    protected String[] allowedBlockIdPatterns = new String[] {"*"};
     protected RoomBlockType[] roomBlocks = new RoomBlockType[0];
-    protected RoomBlockType[] floorBlocks = new RoomBlockType[0];
-    protected RoomBlockType[] wallBlocks = new RoomBlockType[0];
+    protected BoundRoomBlockType[] floorBlocks = new BoundRoomBlockType[0];
+    protected BoundRoomBlockType[] wallBlocks = new BoundRoomBlockType[0];
     protected PreferredBlockType[] preferredWallBlocks = new PreferredBlockType[0];
     protected PreferredBlockType[] preferredFloorBlocks = new PreferredBlockType[0];
     protected String icon = "Icons/ItemCategories/Build-Roofs.png";
@@ -189,6 +212,7 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
         this.unknown = other.unknown;
         this.translationProperties = other.translationProperties;
         this.data = other.data;
+        this.allowedBlockIdPatterns = other.allowedBlockIdPatterns;
         this.roomBlocks = other.roomBlocks;
         this.wallBlocks = other.wallBlocks;
         this.floorBlocks = other.floorBlocks;
@@ -216,15 +240,19 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
         return data;
     }
 
+    public String[] getAllowedBlockIdPatterns() {
+        return allowedBlockIdPatterns;
+    }
+
     public RoomBlockType[] getRoomBlocks() {
         return roomBlocks;
     }
 
-    public RoomBlockType[] getFloorBlocks() {
+    public BoundRoomBlockType[] getFloorBlocks() {
         return floorBlocks;
     }
 
-    public RoomBlockType[] getWallBlocks() {
+    public BoundRoomBlockType[] getWallBlocks() {
         return wallBlocks;
     }
 
@@ -325,42 +353,42 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
         return extraScore;
     }
 
-    public int getExtraScore(long blockPos, RoomBlock block, Map<Long, RoomBlock> blockMap) {
-        int extraScore = 0;
-        int wallKindId = RoomBlockRole.whatKindOfWall(blockPos, block, blockMap);
-
-        if (wallKindId == RoomBlockRole.SOLID_IS_WALL) {
-            for (PreferredBlockType preferredWallBlockType : preferredWallBlocks) {
-                boolean matches = false;
-                for (String matchingBlockId : preferredWallBlockType.getMatchingBlockIds()) {
-                    if (block.getType().getId().equals(matchingBlockId)) {
-                        matches = true;
-                        break;
-                    }
-                }
-                if (matches) {
-                    extraScore += preferredWallBlockType.getScore();
-                    break;
-                }
-            }
-        } else if (wallKindId == RoomBlockRole.SOLID_IS_FLOOR) {
-            for (PreferredBlockType preferredFloorBlock : preferredFloorBlocks) {
-                boolean matches = false;
-                for (String matchingBlockId : preferredFloorBlock.getMatchingBlockIds()) {
-                    if (block.getType().getId().equals(matchingBlockId)) {
-                        matches = true;
-                        break;
-                    }
-                }
-                if (matches) {
-                    extraScore += preferredFloorBlock.getScore();
-                    break;
-                }
-            }
-        }
-
-        return extraScore;
-    }
+//    public int getExtraScore(long blockPos, RoomBlock block, Map<Long, RoomBlock> blockMap) {
+//        int extraScore = 0;
+//        int wallKindId = RoomBlockRole.whatKindOfWall(blockPos, block, blockMap);
+//
+//        if (wallKindId == RoomBlockRole.SOLID_IS_WALL) {
+//            for (PreferredBlockType preferredWallBlockType : preferredWallBlocks) {
+//                boolean matches = false;
+//                for (String matchingBlockId : preferredWallBlockType.getMatchingBlockIds()) {
+//                    if (block.getType().getId().equals(matchingBlockId)) {
+//                        matches = true;
+//                        break;
+//                    }
+//                }
+//                if (matches) {
+//                    extraScore += preferredWallBlockType.getScore();
+//                    break;
+//                }
+//            }
+//        } else if (wallKindId == RoomBlockRole.SOLID_IS_FLOOR) {
+//            for (PreferredBlockType preferredFloorBlock : preferredFloorBlocks) {
+//                boolean matches = false;
+//                for (String matchingBlockId : preferredFloorBlock.getMatchingBlockIds()) {
+//                    if (block.getType().getId().equals(matchingBlockId)) {
+//                        matches = true;
+//                        break;
+//                    }
+//                }
+//                if (matches) {
+//                    extraScore += preferredFloorBlock.getScore();
+//                    break;
+//                }
+//            }
+//        }
+//
+//        return extraScore;
+//    }
 
     public static RoomType findBetter(RoomType o1, RoomType o2) {
         if (o2 == null) return o1;
