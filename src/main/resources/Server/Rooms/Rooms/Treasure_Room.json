@@ -1,0 +1,27 @@
+{
+  "FloorBlocks": [
+    {
+      "BlockIdPattern": "*Gold*",
+      "MinPercentage": 50,
+      "MaxPercentage": 100
+    }
+  ],
+  "WallBlocks": [
+    {
+      "BlockIdPattern": "*Gold*",
+      "MaxPercentage": 100,
+      "MinPercentage": 100
+    }
+  ],
+  "RoomBlocks": [
+    {
+      "BlockIdPattern": "*Goldentree"
+    }
+  ],
+  "Quality": "Legendary",
+  "Score": 1000,
+  "MinArea": 1,
+  "DisallowedBlockIdPattern": [
+    "*Chest*"
+  ]
+}
