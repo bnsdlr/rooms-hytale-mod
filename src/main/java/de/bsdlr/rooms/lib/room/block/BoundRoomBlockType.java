@@ -78,23 +78,34 @@ public class BoundRoomBlockType {
     }
 
     @Nonnull
-    public static List<String> getMatchingBlockIds(@Nonnull String blockIdPattern, String[] allowedBlockIdPatterns) {
+    public static List<String> getMatchingBlockIds(@Nonnull String blockIdPattern, String[] disallowedBlockIdPatterns) {
         List<String> matchingBlockIds = new ArrayList<>();
 
+        outer:
         for (String blockId : BlockType.getAssetMap().getAssetMap().keySet()) {
             boolean idMatches = StringUtil.isGlobMatching(blockIdPattern, blockId);
-            boolean matches = allowedBlockIdPatterns == null;
+//            boolean matches = allowedBlockIdPatterns == null;
 
-            if (idMatches && !matches) {
-                for (String allowedBlockIdPattern : allowedBlockIdPatterns) {
-                    if (StringUtil.isGlobMatching(allowedBlockIdPattern, blockId)) {
-                        matches = true;
-                        break;
+            if (disallowedBlockIdPatterns != null) {
+                for (String disallowedBlockIdPattern : disallowedBlockIdPatterns) {
+                    if (disallowedBlockIdPattern == null) continue;
+                    if (StringUtil.isGlobMatching(disallowedBlockIdPattern, blockId)) {
+                        continue outer;
                     }
                 }
             }
 
-            if (matches) {
+//            if (idMatches && !matches) {
+//                for (String allowedBlockIdPattern : allowedBlockIdPatterns) {
+//                    if (allowedBlockIdPattern == null) continue;
+//                    if (StringUtil.isGlobMatching(allowedBlockIdPattern, blockId)) {
+//                        matches = true;
+//                        break;
+//                    }
+//                }
+//            }
+
+            if (idMatches) {
                 BlockType type = BlockType.getAssetMap().getAsset(blockId);
 
                 if (type == null) continue;
@@ -109,12 +120,12 @@ public class BoundRoomBlockType {
     }
 
     public static void addMatchingBlockIds(@Nonnull BoundRoomBlockType roomBlockType) {
-        addMatchingBlockIds(roomBlockType, new String[]{"*"});
+        addMatchingBlockIds(roomBlockType, null);
     }
 
-    public static void addMatchingBlockIds(@Nonnull BoundRoomBlockType roomBlockType, @Nonnull String[] allowedBlockIdPatterns) {
+    public static void addMatchingBlockIds(@Nonnull BoundRoomBlockType roomBlockType, String[] disallowedBlockIdPatterns) {
         roomBlockType.blockIds =
-                BoundRoomBlockType.getMatchingBlockIds(roomBlockType.getBlockIdPattern(), allowedBlockIdPatterns).toArray(String[]::new);
+                BoundRoomBlockType.getMatchingBlockIds(roomBlockType.getBlockIdPattern(), disallowedBlockIdPatterns).toArray(String[]::new);
     }
 
     public boolean matches(String blockId) {

@@ -5,13 +5,13 @@
 
 ## ToDo
 
+- [ ] DO SOME PERFORMANCE/MEMORY OPTIMIZATIONS...
 - [ ] rooms
     - [ ] more complex room definitions
-      - [x] block that matches regex
       - [ ] blocks of group
       - [ ] block type
     - [ ] buffs for having room
-    - [ ] requirements
+    - [ ] room info ui (where you can change the room type, every 5min, in game day or sth)
 - [ ] sets 
   - [ ] make sets way more responsible
     - [ ] support for blocks that occupy more than one block of space
@@ -20,5 +20,4 @@
       - [ ] add required rotation (relative)
 - [ ] if multiple rooms match, give ability to choose from them.
 - [ ] always add root block ...
-- [ ] override all blocks, even the filler blocks... BreakBlockEventSystem and PlaceBlockEventSystem
 

@@ -4,14 +4,10 @@ import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.validation.Validators;
-import com.hypixel.hytale.common.util.StringUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import de.bsdlr.rooms.lib.asset.pattern.PatternValidator;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
 
 public class SimpleRoomBlockType {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
@@ -47,21 +43,12 @@ public class SimpleRoomBlockType {
     }
 
     public static void addMatchingBlockIds(@Nonnull SimpleRoomBlockType simpleRoomBlockType) {
-        addMatchingBlockIds(simpleRoomBlockType, new String[]{"*"});
+        addMatchingBlockIds(simpleRoomBlockType, null);
     }
 
-    public static void addMatchingBlockIds(@Nonnull SimpleRoomBlockType simpleRoomBlockType, @Nonnull String[] allowedBlockIdPatterns) {
+    public static void addMatchingBlockIds(@Nonnull SimpleRoomBlockType simpleRoomBlockType, String[] disallowedBlockIdPattern) {
         simpleRoomBlockType.blockIds =
-                RoomBlockType.getMatchingBlockIds(simpleRoomBlockType.getBlockIdPattern(), allowedBlockIdPatterns).stream().filter(id -> {
-                    boolean matches = false;
-                    for (String allowedBlockIdPattern : allowedBlockIdPatterns) {
-                        if (StringUtil.isGlobMatching(allowedBlockIdPattern, id)) {
-                            matches = true;
-                            break;
-                        }
-                    }
-                    return matches;
-                }).toArray(String[]::new);
+                RoomBlockType.getMatchingBlockIds(simpleRoomBlockType.getBlockIdPattern(), disallowedBlockIdPattern).toArray(String[]::new);
     }
 
     public String[] getMatchingBlockIds() {

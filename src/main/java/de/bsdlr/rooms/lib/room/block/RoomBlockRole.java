@@ -92,7 +92,7 @@ public enum RoomBlockRole {
         if (isEntrance(type)) return RoomBlockRole.ENTRANCE;
         if (isWindow(type)) return RoomBlockRole.WINDOW;
         if (isFurniture(type)) return RoomBlockRole.FURNITURE;
-        if (isSolidBlock(type)) return RoomBlockRole.SOLID;
+//        if (isSolidBlock(type)) return RoomBlockRole.SOLID;
         else return RoomBlockRole.UNKNOWN;
     }
 
@@ -120,8 +120,9 @@ public enum RoomBlockRole {
     }
 
     public static boolean isRoomBoundBlock(BlockType type) {
-        return type.getMaterial() == BlockMaterial.Solid
-                && (type.getHitboxType().equals("Full") || type.getHitboxType().equals("Stairs") || type.getHitboxType().equals("Block_Half"));
+        return type.getMaterial() == BlockMaterial.Solid && (type.getHitboxType().equals("Stairs") || type.getHitboxType().equals("Block_Half") || (
+                    isSolidBlock(type)
+                ));
     }
 
     public static boolean isRoomBound(BlockType type) {

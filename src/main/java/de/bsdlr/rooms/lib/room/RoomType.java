@@ -13,6 +13,8 @@ import com.hypixel.hytale.codec.schema.metadata.ui.UIRebuildCaches;
 import com.hypixel.hytale.codec.validation.ValidationResults;
 import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.codec.validation.validator.ArrayValidator;
+import com.hypixel.hytale.common.util.StringUtil;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.Color;
 import de.bsdlr.rooms.config.PluginConfig;
 import de.bsdlr.rooms.lib.asset.AssetMapWithGroup;
@@ -27,6 +29,7 @@ import javax.annotation.Nullable;
 import java.util.Map;
 
 public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<String, RoomType>> {
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     public static final AssetBuilderCodec<String, RoomType> CODEC = AssetBuilderCodec.builder(
                     RoomType.class, RoomType::new, Codec.STRING, (t, k) -> t.id = k, t -> t.id, (asset, data) -> asset.data = data, asset -> asset.data
             )
@@ -37,14 +40,20 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
             )
             .documentation("Priority of this room, if there are other matching rooms the one with the higher required blocks or priority will be chosen.")
             .add()
-            .appendInherited(new KeyedCodec<>("AllowedBlockIdPattern", Codec.STRING_ARRAY),
-                    ((roomType, s) -> roomType.allowedBlockIdPatterns = s),
-                    (roomType -> roomType.allowedBlockIdPatterns),
-                    ((roomType, parent) -> roomType.allowedBlockIdPatterns = parent.allowedBlockIdPatterns)
+//            .appendInherited(new KeyedCodec<>("AllowedBlockIdPattern", Codec.STRING_ARRAY),
+//                    ((roomType, s) -> roomType.allowedBlockIdPatterns = s),
+//                    (roomType -> roomType.allowedBlockIdPatterns),
+//                    ((roomType, parent) -> roomType.allowedBlockIdPatterns = parent.allowedBlockIdPatterns)
+//            )
+//            .documentation("Defaults to all.")
+//            .addValidator(new ArrayValidator<>(PatternValidator.BLOCK_TYPE_KEYS_VALIDATOR))
+//            .add()
+            .appendInherited(new KeyedCodec<>("DisallowedBlockIdPattern", Codec.STRING_ARRAY),
+                    ((roomType, s) -> roomType.disallowedBlockIdPatterns = s),
+                    (roomType -> roomType.disallowedBlockIdPatterns),
+                    ((roomType, parent) -> roomType.disallowedBlockIdPatterns = parent.disallowedBlockIdPatterns)
             )
-            .addValidator(Validators.nonNull())
-            .addValidator(Validators.nonNullArrayElements())
-            .addValidator(new ArrayValidator<>(PatternValidator.BLOCK_TYPE_KEYS_VALIDATOR))
+            .documentation("Defaults to none, obviously.")
             .add()
             .appendInherited(new KeyedCodec<>("RoomBlocks", new ArrayCodec<>(RoomBlockType.CODEC, RoomBlockType[]::new)),
                     ((roomType, s) -> roomType.roomBlocks = s),
@@ -140,23 +149,20 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
             .add()
             .afterDecode(roomType -> {
                 for (RoomBlockType roomBlockType : roomType.roomBlocks) {
-                    RoomBlockType.addMatchingBlockIds(roomBlockType, roomType.allowedBlockIdPatterns);
-                    RoomBlockType.addMatchingBlockIdsForLogicOrs(roomBlockType, roomType.allowedBlockIdPatterns);
+                    RoomBlockType.addMatchingBlockIds(roomBlockType, roomType.disallowedBlockIdPatterns);
+                    RoomBlockType.addMatchingBlockIdsForLogicOrs(roomBlockType, roomType.disallowedBlockIdPatterns);
                 }
                 for (BoundRoomBlockType roomBlockType : roomType.wallBlocks) {
-                    BoundRoomBlockType.addMatchingBlockIds(roomBlockType, roomType.allowedBlockIdPatterns);
+                    BoundRoomBlockType.addMatchingBlockIds(roomBlockType, roomType.disallowedBlockIdPatterns);
                 }
                 for (BoundRoomBlockType roomBlockType : roomType.wallBlocks) {
-                    BoundRoomBlockType.addMatchingBlockIds(roomBlockType, roomType.allowedBlockIdPatterns);
+                    BoundRoomBlockType.addMatchingBlockIds(roomBlockType, roomType.disallowedBlockIdPatterns);
                 }
             })
-//            .validator(((roomType, results) -> {
-//
-//            }))
             .build();
     public static final String DEFAULT_KEY = "Room";
     public static final RoomType DEFAULT = new RoomType(DEFAULT_KEY);
-    public static final String UNKNOWN_KEY = "Unknown";
+    public static final String UNKNOWN_KEY = "Unknown_Room";
     public static final RoomType UNKNOWN = new RoomType(UNKNOWN_KEY) {
         {
             this.unknown = true;
@@ -168,7 +174,8 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
     protected boolean unknown = false;
     protected AssetExtraInfo.Data data;
     protected RoomTranslationProperties translationProperties;
-    protected String[] allowedBlockIdPatterns = new String[] {"*"};
+    //    protected String[] allowedBlockIdPatterns = null;
+    protected String[] disallowedBlockIdPatterns = null;
     protected RoomBlockType[] roomBlocks = new RoomBlockType[0];
     protected BoundRoomBlockType[] floorBlocks = new BoundRoomBlockType[0];
     protected BoundRoomBlockType[] wallBlocks = new BoundRoomBlockType[0];
@@ -212,7 +219,8 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
         this.unknown = other.unknown;
         this.translationProperties = other.translationProperties;
         this.data = other.data;
-        this.allowedBlockIdPatterns = other.allowedBlockIdPatterns;
+//        this.allowedBlockIdPatterns = other.allowedBlockIdPatterns;
+        this.disallowedBlockIdPatterns = other.disallowedBlockIdPatterns;
         this.roomBlocks = other.roomBlocks;
         this.wallBlocks = other.wallBlocks;
         this.floorBlocks = other.floorBlocks;
@@ -240,8 +248,12 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
         return data;
     }
 
-    public String[] getAllowedBlockIdPatterns() {
-        return allowedBlockIdPatterns;
+//    public String[] getAllowedBlockIdPatterns() {
+//        return allowedBlockIdPatterns;
+//    }
+
+    public String[] getDisallowedBlockIdPatterns() {
+        return disallowedBlockIdPatterns;
     }
 
     public RoomBlockType[] getRoomBlocks() {
@@ -410,5 +422,62 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
 //        if (o1.score.getAddBefore() > o2.score.getAddBefore()) return o1;
 //        if (o1.score.getAddAfter() < o2.score.getAddAfter()) return o2;
 //        return o1;
+    }
+
+    public boolean matches(Map<String, Integer> blockId2Count, Map<String, Integer> wallBlockId2Count, int wallBlockCount, Map<String, Integer> floorBlockId2Count, int floorBlockCount) {
+        boolean matches = true;
+
+        if (disallowedBlockIdPatterns != null) {
+            for (String blockId : blockId2Count.keySet()) {
+                for (String disallowedBlockIdPattern : disallowedBlockIdPatterns) {
+                    if (StringUtil.isGlobMatching(disallowedBlockIdPattern, blockId)) {
+                        LOGGER.atInfo().log("%s is disallowed by the pattern: %s", blockId, disallowedBlockIdPattern);
+                        return false;
+                    }
+                }
+            }
+        }
+
+//                LOGGER.atInfo().log("block count: %d", type.getRoomBlocks().length);
+        for (RoomBlockType blockType : getRoomBlocks()) {
+            int count = (int) Math.floor(blockType.getCount(blockId2Count));
+            LOGGER.atInfo().log("%d matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
+            if (blockType.getMinCount() > count || blockType.getMaxCount() < count) {
+                matches = false;
+                break;
+            }
+        }
+
+        if (!matches) return false;
+
+        for (BoundRoomBlockType blockType : getWallBlocks()) {
+            double count = blockType.getCount(wallBlockId2Count);
+            LOGGER.atInfo().log("(WALL) %f matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
+
+            double percentage = (count / wallBlockCount) * 100;
+            LOGGER.atInfo().log("%f / %d = %f", count, wallBlockCount, percentage);
+
+            if (blockType.getMinPercentage() > percentage || blockType.getMaxPercentage() < percentage || blockType.getMinCount() > count || blockType.getMaxCount() < count) {
+                matches = false;
+                break;
+            }
+        }
+
+        if (!matches) return false;
+
+        for (BoundRoomBlockType blockType : getFloorBlocks()) {
+            double count = blockType.getCount(floorBlockId2Count);
+            LOGGER.atInfo().log("(FLOOR) %f matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
+
+            double percentage = (count / floorBlockCount) * 100;
+            LOGGER.atInfo().log("%f / %d = %f", count, floorBlockCount, percentage);
+
+            if (blockType.getMinPercentage() > percentage || blockType.getMaxPercentage() < percentage || blockType.getMinCount() > count || blockType.getMaxCount() < count) {
+                matches = false;
+                break;
+            }
+        }
+
+        return matches;
     }
 }

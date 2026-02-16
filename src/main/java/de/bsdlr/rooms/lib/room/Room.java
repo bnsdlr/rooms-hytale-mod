@@ -306,47 +306,7 @@ public class Room {
 
             for (RoomType type : RoomType.getAssetMap().getAssetMap().values()) {
                 if (type.minArea > area) continue;
-                boolean matches = true;
-//                LOGGER.atInfo().log("block count: %d", type.getRoomBlocks().length);
-                for (RoomBlockType blockType : type.getRoomBlocks()) {
-                    int count = (int) Math.floor(blockType.getCount(blockId2Count));
-                    LOGGER.atInfo().log("%d matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
-                    if (blockType.getMinCount() > count || blockType.getMaxCount() < count) {
-                        matches = false;
-                        break;
-                    }
-                }
-
-                if (matches) {
-                    for (BoundRoomBlockType blockType : type.getWallBlocks()) {
-                        double count = blockType.getCount(wallBlockId2Count);
-                        LOGGER.atInfo().log("(WALL) %f matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
-
-                        double percentage = (count / wallBlockCount) * 100;
-                        LOGGER.atInfo().log("%f / %d = %f", count, wallBlockCount, percentage);
-
-                        if (blockType.getMinPercentage() > percentage || blockType.getMaxPercentage() < percentage || blockType.getMinCount() > count || blockType.getMaxCount() < count) {
-                            matches = false;
-                            break;
-                        }
-                    }
-                }
-
-                if (matches) {
-                    for (BoundRoomBlockType blockType : type.getFloorBlocks()) {
-                        double count = blockType.getCount(floorBlockId2Count);
-                        LOGGER.atInfo().log("(FLOOR) %f matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
-
-                        double percentage = (count / floorBlockCount) * 100;
-                        LOGGER.atInfo().log("%f / %d = %f", count, floorBlockCount, percentage);
-
-                        if (blockType.getMinPercentage() > percentage || blockType.getMaxPercentage() < percentage || blockType.getMinCount() > count || blockType.getMaxCount() < count) {
-                            matches = false;
-                            break;
-                        }
-                    }
-                }
-
+                boolean matches = type.matches(blockId2Count, wallBlockId2Count, wallBlockCount, floorBlockId2Count, floorBlockCount);
                 if (matches) {
                     matching.add(type);
                     LOGGER.atInfo().log("room %s matches", type.getId());
