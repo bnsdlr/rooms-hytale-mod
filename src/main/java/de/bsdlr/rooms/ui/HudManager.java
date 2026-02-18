@@ -31,17 +31,17 @@ public class HudManager {
             for (PlayerRef playerRef : Universe.get().getPlayers()) {
                 if (!playerRef.isValid()) {
                     LOGGER.atWarning().log("PlayerRef is invalid.");
-                    return;
+                    continue;
                 }
                 if (playerRef.getWorldUuid() == null) {
                     LOGGER.atWarning().log("PlayerRef has no world uuid.");
-                    return;
+                    continue;
                 }
 
                 World world = Universe.get().getWorld(playerRef.getWorldUuid());
                 if (world == null) {
                     LOGGER.atWarning().log("World is null.");
-                    return;
+                    continue;
                 }
 
                 Vector3d position = playerRef.getTransform().getPosition();
@@ -63,7 +63,7 @@ public class HudManager {
 //                                world.setBlock(bx, by, bz, "Rock_Stone");
 //                            }
                             RoomsPlugin.get().getRoomManagerAndComputeIfAbsent(world.getWorldConfig().getUuid()).removeRoom(room);
-                            return;
+                            continue;
                         } else {
                             if (room.equals(validated)) {
                                 playerRef.sendMessage(Message.raw("Room and validated room are equal."));

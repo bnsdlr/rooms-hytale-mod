@@ -12,11 +12,8 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import de.bsdlr.rooms.RoomsPlugin;
-import de.bsdlr.rooms.lib.set.FurnitureSet;
-import de.bsdlr.rooms.lib.set.FurnitureSetDetector;
 
 import javax.annotation.Nonnull;
-import java.util.Set;
 
 public class SetCommand extends AbstractPlayerCommand {
     public static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
@@ -37,10 +34,10 @@ public class SetCommand extends AbstractPlayerCommand {
 
         Vector3i scanRadius = RoomsPlugin.get().getConfig().get().getScanRadius();
 
-        Set<FurnitureSet> furnitureSets = FurnitureSetDetector.detectFurnitureSetsAround(world, x, y, z, scanRadius);
-        ctx.sendMessage(Message.raw("found " + furnitureSets.size() + " sets."));
-        for (FurnitureSet furnitureSet : furnitureSets) {
-            LOGGER.atInfo().log(furnitureSet.toString());
-        }
+//        Set<FurnitureSet> furnitureSets = FurnitureSetDetector.detectFurnitureSetsAround(world, x, y, z, scanRadius);
+//        ctx.sendMessage(Message.raw("found " + furnitureSets.size() + " sets."));
+//        for (FurnitureSet furnitureSet : furnitureSets) {
+//            LOGGER.atInfo().log(furnitureSet.toString());
+//        }
     }
 }

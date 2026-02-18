@@ -7,13 +7,13 @@ import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.common.util.StringUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import de.bsdlr.rooms.lib.asset.pattern.PatternValidator;
+import de.bsdlr.rooms.lib.asset.validators.PatternValidator;
+import de.bsdlr.rooms.lib.room.RoomType;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class BoundRoomBlockType {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
@@ -24,7 +24,7 @@ public class BoundRoomBlockType {
                     ((roomBlockType, parent) -> roomBlockType.blockIdPattern = parent.blockIdPattern)
             )
             .addValidator(Validators.nonNull())
-            .addValidator(PatternValidator.BLOCK_TYPE_KEYS_VALIDATOR)
+            .addValidator(PatternValidator.BLOCK_IDS)
             .add()
             .appendInherited(new KeyedCodec<>("MinPercentage", Codec.DOUBLE),
                     ((roomBlockType, s) -> roomBlockType.minPercentage = s),
@@ -78,40 +78,16 @@ public class BoundRoomBlockType {
     }
 
     @Nonnull
-    public static List<String> getMatchingBlockIds(@Nonnull String blockIdPattern, String[] disallowedBlockIdPatterns) {
+    public static List<String> getMatchingBlockIds(@Nonnull String blockIdPattern, RoomType roomType) {
         List<String> matchingBlockIds = new ArrayList<>();
 
-        outer:
-        for (String blockId : BlockType.getAssetMap().getAssetMap().keySet()) {
-            boolean idMatches = StringUtil.isGlobMatching(blockIdPattern, blockId);
-//            boolean matches = allowedBlockIdPatterns == null;
+        for (BlockType type : BlockType.getAssetMap().getAssetMap().values()) {
+            if (type == null) continue;
+            if (roomType != null && !roomType.isBlockIdAllowed(type)) continue;
 
-            if (disallowedBlockIdPatterns != null) {
-                for (String disallowedBlockIdPattern : disallowedBlockIdPatterns) {
-                    if (disallowedBlockIdPattern == null) continue;
-                    if (StringUtil.isGlobMatching(disallowedBlockIdPattern, blockId)) {
-                        continue outer;
-                    }
-                }
-            }
-
-//            if (idMatches && !matches) {
-//                for (String allowedBlockIdPattern : allowedBlockIdPatterns) {
-//                    if (allowedBlockIdPattern == null) continue;
-//                    if (StringUtil.isGlobMatching(allowedBlockIdPattern, blockId)) {
-//                        matches = true;
-//                        break;
-//                    }
-//                }
-//            }
-
-            if (idMatches) {
-                BlockType type = BlockType.getAssetMap().getAsset(blockId);
-
-                if (type == null) continue;
-
+            if (StringUtil.isGlobMatching(blockIdPattern, type.getId())) {
                 if (RoomBlockRole.getRole(type).isSolid()) {
-                    matchingBlockIds.add(blockId);
+                    matchingBlockIds.add(type.getId());
                 }
             }
         }
@@ -123,9 +99,9 @@ public class BoundRoomBlockType {
         addMatchingBlockIds(roomBlockType, null);
     }
 
-    public static void addMatchingBlockIds(@Nonnull BoundRoomBlockType roomBlockType, String[] disallowedBlockIdPatterns) {
+    public static void addMatchingBlockIds(@Nonnull BoundRoomBlockType roomBlockType, RoomType roomType) {
         roomBlockType.blockIds =
-                BoundRoomBlockType.getMatchingBlockIds(roomBlockType.getBlockIdPattern(), disallowedBlockIdPatterns).toArray(String[]::new);
+                BoundRoomBlockType.getMatchingBlockIds(roomBlockType.getBlockIdPattern(), roomType).toArray(String[]::new);
     }
 
     public boolean matches(String blockId) {

@@ -5,7 +5,8 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.logger.HytaleLogger;
-import de.bsdlr.rooms.lib.asset.pattern.PatternValidator;
+import de.bsdlr.rooms.lib.asset.validators.PatternValidator;
+import de.bsdlr.rooms.lib.room.RoomType;
 
 import javax.annotation.Nonnull;
 
@@ -18,7 +19,7 @@ public class SimpleRoomBlockType {
                     ((roomBlockType, parent) -> roomBlockType.blockIdPattern = parent.blockIdPattern)
             )
             .addValidator(Validators.nonNull())
-            .addValidator(PatternValidator.BLOCK_TYPE_KEYS_VALIDATOR)
+            .addValidator(PatternValidator.BLOCK_IDS)
             .add()
             .appendInherited(new KeyedCodec<>("CountsAs", Codec.DOUBLE),
                     ((roomBlockType, s) -> roomBlockType.countsAs = s),
@@ -46,9 +47,9 @@ public class SimpleRoomBlockType {
         addMatchingBlockIds(simpleRoomBlockType, null);
     }
 
-    public static void addMatchingBlockIds(@Nonnull SimpleRoomBlockType simpleRoomBlockType, String[] disallowedBlockIdPattern) {
+    public static void addMatchingBlockIds(@Nonnull SimpleRoomBlockType simpleRoomBlockType, RoomType roomType) {
         simpleRoomBlockType.blockIds =
-                RoomBlockType.getMatchingBlockIds(simpleRoomBlockType.getBlockIdPattern(), disallowedBlockIdPattern).toArray(String[]::new);
+                RoomBlockType.getMatchingBlockIds(simpleRoomBlockType.getBlockIdPattern(), roomType).toArray(String[]::new);
     }
 
     public String[] getMatchingBlockIds() {

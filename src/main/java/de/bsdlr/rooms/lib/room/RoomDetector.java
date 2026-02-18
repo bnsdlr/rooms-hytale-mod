@@ -15,6 +15,7 @@ import de.bsdlr.rooms.lib.exceptions.UnknownBlockException;
 import de.bsdlr.rooms.lib.exceptions.WorldChunkNullException;
 import de.bsdlr.rooms.lib.room.block.RoomBlock;
 import de.bsdlr.rooms.lib.room.block.RoomBlockRole;
+import de.bsdlr.rooms.utils.BlockUtils;
 import de.bsdlr.rooms.utils.ChunkManager;
 import de.bsdlr.rooms.utils.PackedBox;
 import de.bsdlr.rooms.utils.PositionUtils;
@@ -205,6 +206,19 @@ public class RoomDetector {
                 }
 
                 if (!set) {
+//                    RoomBlock.Builder blockBuilder = chunkManager.getRoomBlockBuilderAt(next).setFiller(chunkManager.world.getChunkStore()).setToRootBlock();
+//
+//                    Vector3i root = BlockUtils.getRoot(blockBuilder.getFiller(), blockBuilder.getPos());
+////                    List<Vector3i> occupiedBlocks = BlockUtils.getAllOccupiedPositions(chunkManager.world, blockBuilder.getType(), blockBuilder.getPos());
+//
+//                    for (Vector3i pos : BlockUtils.getAllOccupiedPositions(chunkManager.world, blockBuilder.getType(), blockBuilder.getPos())) {
+//                        boolean isFiller = !pos.equals(root);
+//                        LOGGER.atInfo().log("Pre added %s block to visited and room builder (pos: %d %d %d, type: %s)", isFiller ? "filler" : "root",
+//                                pos.x, pos.y, pos.z, blockBuilder.getType().getId());
+//                        visited.add(pos);
+//                        builder.addBlock(new RoomBlock(blockBuilder.getType(), pos, blockBuilder.getRole(), isFiller));
+//                    }
+
                     block = chunkManager.getRoomBlockBuilderAt(next).setFiller(chunkManager.world.getChunkStore()).build();
                 }
 
@@ -217,10 +231,6 @@ public class RoomDetector {
 
 //                LOGGER.atInfo().log("(%d) next: %d %d %d; role: %s; wall: %s", counter, next.x, next.y, next.z, role, role.isRoomWall());
                 if (role.isRoomBound()) {
-//                    if (blockBuilder.isFiller()) {
-//                        addFillerBlocks(chunkManager, visited, builder, blockBuilder);
-//                    }
-
                     if (visited.add(block.getPos())) {
                         builder.addBlock(block);
                     }
@@ -247,56 +257,6 @@ public class RoomDetector {
         return builder.build();
     }
 
-//    private static void addFillerBlocks(@Nonnull ChunkManager chunkManager, @Nonnull Set<Vector3i> visited, @Nonnull Room.Builder builder, @Nonnull RoomBlock.Builder blockBuilder) {
-//        Vector3i rootPos = BlockUtils.getRoot(blockBuilder.getFiller(), blockBuilder.getPos());
-//        BlockType type = blockBuilder.getAndSetBlockTypeIfNull();
-//
-//        if (type == null) {
-//            LOGGER.atWarning().log("BlockType is null!");
-//            return;
-//        }
-//
-//        BlockBoundingBoxes bbb = BlockBoundingBoxes.getAssetMap().getAsset(type.getHitboxTypeIndex());
-//        if (bbb == null) return;
-//
-////        int rotationIndex = chunkManager.world.getBlockRotationIndex(rootPos.x, rootPos.y, rootPos.z);
-//        LOGGER.atInfo().log("-----------------------------------------");
-//        CompletableFuture<Integer> future = new CompletableFuture<>();
-//
-//        chunkManager.world.execute(() -> {
-//            LOGGER.atInfo().log("waiting for rotation index");
-//            int index = chunkManager.getChunkAccessorFromBlock(rootPos.x, rootPos.z).getBlockRotationIndex(rootPos.x, rootPos.y, rootPos.z);
-//            LOGGER.atInfo().log("got rotation index, completing future");
-//            future.complete(index);
-//        });
-//
-//        try {
-//            LOGGER.atInfo().log("getting rotation index...");
-//            Integer rotationIndex = future.get();
-//            BlockBoundingBoxes.RotatedVariantBoxes rotatedHitbox = bbb.get(rotationIndex);
-//            Box bb = rotatedHitbox.getBoundingBox();
-//            LOGGER.atInfo().log("bounding box: %s", bb);
-//        } catch (Exception e) {
-//            LOGGER.atInfo().withCause(e).log();
-//        }
-//
-//        LOGGER.atInfo().log("-----------------------------------------");
-//
-////        int rotationIndex = chunkManager.getChunkAccessorFromBlock(rootPos.x, rootPos.z).getBlockRotationIndex(rootPos.x, rootPos.y, rootPos.z);
-//
-
-    /// /        LOGGER.atInfo().log("filler block pos: %d %d %d", blockBuilder.getX(), blockBuilder.getY(), blockBuilder.getZ());
-    /// /        LOGGER.atInfo().log("root block pos: %d %d %d", rootPos.x, rootPos.y, rootPos.z);
-    /// /        int blockId = chunkManager.getBlockIdAt(rootPos);
-    /// /        RoomBlock.Builder rootBlockBuilder = new RoomBlock.Builder(blockId, rootPos)
-    /// /                .setFiller(new Vector3i(0, 0, 0));
-    /// /        RoomBlockRole r = rootBlockBuilder.setAndGetRole();
-    /// /        LOGGER.atInfo().log("room block role: %s", r);
-    /// /
-    /// /        if (visited.add(rootPos)) {
-    /// /            builder.addBlock(rootBlockBuilder.build());
-    /// /        }
-//    }
     private static boolean isInRoom(ChunkManager chunkManager, Vector3i boundScanRadius, int x, int y, int z, Map<Long, BlockType> overrideBlocks) throws WorldChunkNullException {
         if (!detectRoomWall(chunkManager, boundScanRadius.x, x, y, z, 1, 0, overrideBlocks)) return false;
         if (!detectRoomWall(chunkManager, boundScanRadius.x, x, y, z, -1, 0, overrideBlocks)) return false;

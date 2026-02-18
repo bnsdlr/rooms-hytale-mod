@@ -20,10 +20,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.FillerBlockUtil;
 import com.hypixel.hytale.server.core.util.TargetUtil;
 import de.bsdlr.rooms.lib.room.block.RoomBlockRole;
-import de.bsdlr.rooms.lib.set.FurnitureSet;
-import de.bsdlr.rooms.lib.set.FurnitureSetDetector;
-import de.bsdlr.rooms.lib.set.FurnitureSetType;
-import de.bsdlr.rooms.utils.ChunkManager;
 
 import javax.annotation.Nonnull;
 import java.awt.*;
@@ -138,21 +134,21 @@ public class BlockInfoCommand extends AbstractPlayerCommand {
 //            ctx.sendMessage(Message.raw("block ref is null and or invalid").color(Color.RED));
 //        }
 
-        ChunkManager chunkManager = new ChunkManager(world);
-
-        int counter = 0;
-
-        for (FurnitureSetType furnitureSetType : FurnitureSetType.getAssetStore().getAssetMap().getAssetMap().values()) {
-            FurnitureSet furnitureSet = FurnitureSetDetector.getFurnitureSetAt(chunkManager, furnitureSetType, pos.x, pos.y, pos.z);
-            if (furnitureSet != null) {
-                ctx.sendMessage(Message.raw("Block is part of furniture set: " + furnitureSetType.getId()));
-                counter++;
-            }
-        }
-
-        if (counter == 0) {
-            ctx.sendMessage(Message.raw("Block is not part of a furniture set."));
-        }
+//        ChunkManager chunkManager = new ChunkManager(world);
+//
+//        int counter = 0;
+//
+//        for (FurnitureSetType furnitureSetType : FurnitureSetType.getAssetStore().getAssetMap().getAssetMap().values()) {
+//            FurnitureSet furnitureSet = FurnitureSetDetector.getFurnitureSetAt(chunkManager, furnitureSetType, pos.x, pos.y, pos.z);
+//            if (furnitureSet != null) {
+//                ctx.sendMessage(Message.raw("Block is part of furniture set: " + furnitureSetType.getId()));
+//                counter++;
+//            }
+//        }
+//
+//        if (counter == 0) {
+//            ctx.sendMessage(Message.raw("Block is not part of a furniture set."));
+//        }
 
         BlockBoundingBoxes bbb = BlockBoundingBoxes.getAssetMap().getAsset(type.getHitboxTypeIndex());
         if (bbb == null) return;

@@ -7,7 +7,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.common.util.StringUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import de.bsdlr.rooms.lib.asset.pattern.PatternValidator;
+import de.bsdlr.rooms.lib.asset.validators.PatternValidator;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ public class PreferredBlockType {
                     ((preferredBlockType, parent) -> preferredBlockType.blockIdPattern = parent.blockIdPattern)
             )
             .addValidator(Validators.nonNull())
-            .addValidator(PatternValidator.BLOCK_TYPE_KEYS_VALIDATOR)
+            .addValidator(PatternValidator.BLOCK_IDS)
             .add()
             .appendInherited(new KeyedCodec<>("Score", Codec.INTEGER),
                     ((preferredBlockType, s) -> preferredBlockType.score = s),

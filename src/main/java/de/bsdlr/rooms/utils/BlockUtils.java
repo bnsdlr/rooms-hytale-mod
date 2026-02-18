@@ -1,5 +1,6 @@
 package de.bsdlr.rooms.utils;
 
+import com.hypixel.hytale.assetstore.AssetKeyValidator;
 import com.hypixel.hytale.assetstore.MissingAssetException;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -21,6 +22,7 @@ import java.util.List;
 
 public class BlockUtils {
     public static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+    public static final AssetKeyValidator<String> BLOCK_ASSET_KEY_VALIDATOR = new AssetKeyValidator<>(BlockType::getAssetStore);
 
     public static List<Vector3i> getAllOccupiedPositions(World world, BlockType type, Vector3i target) throws WorldChunkNullException, MissingAssetException {
         WorldChunk chunk = world.getChunk(ChunkUtil.indexChunkFromBlock(target.x, target.z));
@@ -99,10 +101,12 @@ public class BlockUtils {
     }
 
     public static Vector3i getRoot(Vector3i filler, Vector3i fillerPos) {
+        if (filler == null) return fillerPos;
         return getRoot(filler, fillerPos.x, fillerPos.y, fillerPos.z);
     }
 
     public static Vector3i getRoot(Vector3i filler, int x, int y, int z) {
+        if (filler == null) return new Vector3i(x, y, z);
         return new Vector3i(filler.x + (x * -1), filler.y + (y * -1), filler.z + (z * -1));
     }
 }

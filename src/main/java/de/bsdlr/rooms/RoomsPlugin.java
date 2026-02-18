@@ -14,21 +14,19 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.Config;
 import de.bsdlr.rooms.commands.*;
 import de.bsdlr.rooms.config.PluginConfig;
+import de.bsdlr.rooms.lib.asset.AssetMapWithGroup;
 import de.bsdlr.rooms.lib.asset.quality.Quality;
 import de.bsdlr.rooms.lib.asset.score.ScoreGroup;
 import de.bsdlr.rooms.lib.exceptions.AssetValidationException;
 import de.bsdlr.rooms.lib.room.RoomManager;
 import de.bsdlr.rooms.lib.room.RoomSize;
 import de.bsdlr.rooms.lib.room.RoomType;
-import de.bsdlr.rooms.lib.set.FurnitureSetType;
-import de.bsdlr.rooms.lib.asset.AssetMapWithGroup;
 import de.bsdlr.rooms.lib.storage.Data;
 import de.bsdlr.rooms.lib.storage.DataManager;
 import de.bsdlr.rooms.lib.systems.BreakBlockEventSystem;
 import de.bsdlr.rooms.lib.systems.PlaceBlockEventSystem;
 import de.bsdlr.rooms.ui.HudComponent;
 import de.bsdlr.rooms.ui.HudManager;
-import de.bsdlr.rooms.utils.PositionUtils;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -129,15 +127,15 @@ public class RoomsPlugin extends JavaPlugin {
         qualityAssetStoreBuilder.preLoadAssets(Collections.singletonList(Quality.DEFAULT_QUALITY));
         this.getAssetRegistry().register(qualityAssetStoreBuilder.build());
 
-        // Furniture Set Type Asset Store
-        AssetMapWithGroup<String, FurnitureSetType> furnitureSetTypeAssetMap = new AssetMapWithGroup<>(FurnitureSetType[]::new, FurnitureSetType::getGroup);
-        HytaleAssetStore.Builder<String, FurnitureSetType, AssetMapWithGroup<String, FurnitureSetType>> setTypeAssetStoreBuilder = HytaleAssetStore.builder(FurnitureSetType.class, furnitureSetTypeAssetMap);
-        setTypeAssetStoreBuilder.setPath("Rooms/FurnitureSets");
-        setTypeAssetStoreBuilder.setCodec(FurnitureSetType.CODEC);
-        setTypeAssetStoreBuilder.setKeyFunction(FurnitureSetType::getId);
-        setTypeAssetStoreBuilder.loadsAfter(Quality.class);
-        setTypeAssetStoreBuilder.setReplaceOnRemove(FurnitureSetType::getUnknownFor);
-        this.getAssetRegistry().register(setTypeAssetStoreBuilder.build());
+//        // Furniture Set Type Asset Store
+//        AssetMapWithGroup<String, FurnitureSetType> furnitureSetTypeAssetMap = new AssetMapWithGroup<>(FurnitureSetType[]::new, FurnitureSetType::getGroup);
+//        HytaleAssetStore.Builder<String, FurnitureSetType, AssetMapWithGroup<String, FurnitureSetType>> setTypeAssetStoreBuilder = HytaleAssetStore.builder(FurnitureSetType.class, furnitureSetTypeAssetMap);
+//        setTypeAssetStoreBuilder.setPath("Rooms/FurnitureSets");
+//        setTypeAssetStoreBuilder.setCodec(FurnitureSetType.CODEC);
+//        setTypeAssetStoreBuilder.setKeyFunction(FurnitureSetType::getId);
+//        setTypeAssetStoreBuilder.loadsAfter(Quality.class);
+//        setTypeAssetStoreBuilder.setReplaceOnRemove(FurnitureSetType::getUnknownFor);
+//        this.getAssetRegistry().register(setTypeAssetStoreBuilder.build());
 
         // Builder Type Asset Store
         AssetMapWithGroup<String, RoomType> roomTypeAssetMap = new AssetMapWithGroup<>(RoomType[]::new, RoomType::getGroup);
@@ -145,7 +143,7 @@ public class RoomsPlugin extends JavaPlugin {
         roomTypeAssetStoreBuilder.setPath("Rooms/Rooms");
         roomTypeAssetStoreBuilder.setCodec(RoomType.CODEC);
         roomTypeAssetStoreBuilder.setKeyFunction(RoomType::getId);
-        roomTypeAssetStoreBuilder.loadsAfter(FurnitureSetType.class, Quality.class, RoomSize.class);
+        roomTypeAssetStoreBuilder.loadsAfter(/*FurnitureSetType.class,*/ Quality.class, RoomSize.class);
         roomTypeAssetStoreBuilder.setReplaceOnRemove(RoomType::getUnknownFor);
         roomTypeAssetStoreBuilder.preLoadAssets(Collections.singletonList(RoomType.DEFAULT));
 //        roomTypeAssetStoreBuilder.setPacketGenerator(new RoomTypePacketGenerator());
@@ -187,15 +185,24 @@ public class RoomsPlugin extends JavaPlugin {
         config.save();
         roomDataManager.saveAll();
 
-//        StringBuilder builder = new StringBuilder();
+//        List<String> blocks = new ArrayList<>();
 //
-//        for (String key : BlockType.getAssetMap().getAssetMap().keySet()) {
-//            builder.append(key);
-//            builder.append("\n");
+//        for (BlockType type : BlockType.getAssetMap().getAssetMap().values()) {
+//            if (type.getId().startsWith("*")) continue;
+//            blocks.add(String.format("%12s %28s %s", type.getGroup(), type.getHitboxType(), type.getId()));
 //        }
 //
+//        Collections.sort(blocks);
+//
 //        try {
-//            Files.writeString(this.getDataDirectory().resolve("blockIds.txt"), builder.toString());
+//            StringBuilder builder = new StringBuilder();
+//
+//            for (String block : blocks) {
+//                builder.append(block);
+//                builder.append("\n");
+//            }
+//
+//            Files.writeString(this.getDataDirectory().resolve("output.txt"), builder.toString());
 //        } catch (IOException e) {
 //            throw new RuntimeException(e);
 //        }

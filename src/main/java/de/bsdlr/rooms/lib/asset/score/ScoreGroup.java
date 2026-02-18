@@ -8,10 +8,11 @@ import com.hypixel.hytale.assetstore.map.IndexedLookupTableAssetMap;
 import com.hypixel.hytale.assetstore.map.JsonAssetWithMap;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
+import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.codec.validation.validator.ArrayValidator;
 import com.hypixel.hytale.common.util.StringUtil;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import de.bsdlr.rooms.lib.asset.pattern.PatternValidator;
+import de.bsdlr.rooms.lib.asset.validators.PatternValidator;
 
 import javax.annotation.Nonnull;
 
@@ -44,31 +45,63 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
                     scoreGroup -> scoreGroup.includeBlockTypes,
                     (scoreGroup, parent) -> scoreGroup.includeBlockTypes = parent.includeBlockTypes
             )
-            .documentation("Defines blocks that should be in the group.")
-            .addValidator(new ArrayValidator<>(PatternValidator.BLOCK_TYPE_KEYS_VALIDATOR))
+            .documentation("Defines blocks (by id) that should be in the group.")
+            .addValidator(Validators.nonNull())
+            .addValidator(Validators.nonNullArrayElements())
+            .addValidator(new ArrayValidator<>(PatternValidator.BLOCK_IDS))
             .add()
             .appendInherited(new KeyedCodec<>("ExcludeBlockTypes", Codec.STRING_ARRAY),
                     (scoreGroup, s) -> scoreGroup.excludeBlockTypes = s,
                     scoreGroup -> scoreGroup.excludeBlockTypes,
                     (scoreGroup, parent) -> scoreGroup.excludeBlockTypes = parent.excludeBlockTypes
             )
-            .documentation("Defines blocks that should NOT be in the group.")
-            .addValidator(new ArrayValidator<>(PatternValidator.BLOCK_TYPE_KEYS_VALIDATOR))
+            .documentation("Defines blocks (by id) that should NOT be in the group.")
+            .addValidator(Validators.nonNull())
+            .addValidator(Validators.nonNullArrayElements())
+            .addValidator(new ArrayValidator<>(PatternValidator.BLOCK_IDS))
             .add()
-//            .appendInherited(
-//                    new KeyedCodec<>("IncludeCategories", new ArrayCodec<>(Codec.STRING_ARRAY, String[][]::new)),
-//                    (scoreGroup, s) -> scoreGroup.includeCategories = s,
-//                    scoreGroup -> scoreGroup.includeCategories,
-//                    ((scoreGroup, parent) -> scoreGroup.includeCategories = parent.includeCategories)
-//            )
-//            .add()
-//            .appendInherited(
-//                    new KeyedCodec<>("ExcludeCategories", new ArrayCodec<>(Codec.STRING_ARRAY, String[][]::new)),
-//                    (scoreGroup, s) -> scoreGroup.excludeCategories = s,
-//                    scoreGroup -> scoreGroup.excludeCategories,
-//                    ((scoreGroup, parent) -> scoreGroup.excludeCategories = parent.excludeCategories)
-//            )
-//            .add()
+
+            .appendInherited(new KeyedCodec<>("IncludeBlockGroups", Codec.STRING_ARRAY),
+                    (scoreGroup, s) -> scoreGroup.includeBlockGroups = s,
+                    scoreGroup -> scoreGroup.includeBlockGroups,
+                    (scoreGroup, parent) -> scoreGroup.includeBlockGroups = parent.includeBlockGroups
+            )
+            .documentation("Defines blocks (by group) that should be in the group.")
+            .addValidator(Validators.nonNull())
+            .addValidator(Validators.nonNullArrayElements())
+            .addValidator(new ArrayValidator<>(PatternValidator.BLOCK_GROUPS))
+            .add()
+            .appendInherited(new KeyedCodec<>("ExcludeBlockGroups", Codec.STRING_ARRAY),
+                    (scoreGroup, s) -> scoreGroup.excludeBlockGroups = s,
+                    scoreGroup -> scoreGroup.excludeBlockGroups,
+                    (scoreGroup, parent) -> scoreGroup.excludeBlockGroups = parent.excludeBlockGroups
+            )
+            .documentation("Defines blocks (by group) that should NOT be in the group.")
+            .addValidator(Validators.nonNull())
+            .addValidator(Validators.nonNullArrayElements())
+            .addValidator(new ArrayValidator<>(PatternValidator.BLOCK_GROUPS))
+            .add()
+
+            .appendInherited(new KeyedCodec<>("IncludeHitboxTypes", Codec.STRING_ARRAY),
+                    (scoreGroup, s) -> scoreGroup.includeHitboxTypes = s,
+                    scoreGroup -> scoreGroup.includeHitboxTypes,
+                    (scoreGroup, parent) -> scoreGroup.includeHitboxTypes = parent.includeHitboxTypes
+            )
+            .documentation("Defines blocks (by hitbox type) that should be in the group.")
+            .addValidator(Validators.nonNull())
+            .addValidator(Validators.nonNullArrayElements())
+            .addValidator(new ArrayValidator<>(PatternValidator.HITBOX_TYPES))
+            .add()
+            .appendInherited(new KeyedCodec<>("ExcludeHitboxTypes", Codec.STRING_ARRAY),
+                    (scoreGroup, s) -> scoreGroup.excludeHitboxTypes = s,
+                    scoreGroup -> scoreGroup.excludeHitboxTypes,
+                    (scoreGroup, parent) -> scoreGroup.excludeHitboxTypes = parent.excludeHitboxTypes
+            )
+            .documentation("Defines blocks (by hitbox type) that should NOT be in the group.")
+            .addValidator(Validators.nonNull())
+            .addValidator(Validators.nonNullArrayElements())
+            .addValidator(new ArrayValidator<>(PatternValidator.HITBOX_TYPES))
+            .add()
             .build();
     private static AssetStore<String, ScoreGroup, IndexedLookupTableAssetMap<String, ScoreGroup>> ASSET_STORE;
     protected String id;
@@ -79,12 +112,14 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
     protected String[] includeBlockTypes = new String[0];
     @Nonnull
     protected String[] excludeBlockTypes = new String[0];
-//    protected String[] includeBlockGroups;
-//    protected String[] excludeBlockGroups;
-//    protected String[] includeHitboxTypes;
-//    protected String[] excludeHitboxTypes;
-//    protected String[][] includeCategories;
-//    protected String[][] excludeCategories;
+    @Nonnull
+    protected String[] includeBlockGroups = new String[0];
+    @Nonnull
+    protected String[] excludeBlockGroups = new String[0];
+    @Nonnull
+    protected String[] includeHitboxTypes = new String[0];
+    @Nonnull
+    protected String[] excludeHitboxTypes = new String[0];
 
     @Nonnull
     public static AssetStore<String, ScoreGroup, IndexedLookupTableAssetMap<String, ScoreGroup>> getAssetStore() {
@@ -111,30 +146,66 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
         this.id = other.id;
         this.data = other.data;
         this.score = other.score;
+        this.includeAll = other.includeAll;
         this.includeBlockTypes = other.includeBlockTypes;
+        this.excludeBlockTypes = other.excludeBlockTypes;
+        this.includeBlockGroups = other.includeBlockGroups;
+        this.excludeBlockGroups = other.excludeBlockGroups;
+        this.includeHitboxTypes = other.includeHitboxTypes;
+        this.excludeHitboxTypes = other.excludeHitboxTypes;
     }
 
     public boolean matches(BlockType type) {
-        boolean includeMatches = includeAll;
-        boolean excludeMatches = false;
+        for (String pattern : excludeBlockTypes) {
+            if (StringUtil.isGlobMatching(pattern, type.getId())) {
+                return false;
+            }
+        }
 
-        if (!includeAll) {
-            for (String pattern : includeBlockTypes) {
-                if (StringUtil.isGlobMatching(pattern, type.getId())) {
-                    includeMatches = true;
+        for (String group : excludeBlockGroups) {
+            if (group.equals(type.getGroup())) {
+                return false;
+            }
+        }
+
+        for (String hitbox : excludeHitboxTypes) {
+            if (hitbox.equals(type.getHitboxType())) {
+                return false;
+            }
+        }
+
+        if (includeAll) return true;
+
+        boolean typeMatches = false;
+        boolean groupMatches = false;
+        boolean hitboxMatches = false;
+
+        for (String pattern : includeBlockTypes) {
+            if (StringUtil.isGlobMatching(pattern, type.getId())) {
+                typeMatches = true;
+                break;
+            }
+        }
+
+        if (typeMatches) {
+            for (String group : includeBlockGroups) {
+                if (group.equals(type.getGroup())) {
+                    groupMatches = true;
                     break;
                 }
             }
         }
 
-        for (String pattern : excludeBlockTypes) {
-            if (StringUtil.isGlobMatching(pattern, type.getId())) {
-                excludeMatches = true;
-                break;
+        if (groupMatches) {
+            for (String hitbox : includeHitboxTypes) {
+                if (hitbox.equals(type.getHitboxType())) {
+                    hitboxMatches = true;
+                    break;
+                }
             }
         }
 
-        return includeMatches && !excludeMatches;
+        return typeMatches && groupMatches && hitboxMatches;
     }
 
     @Override
@@ -160,5 +231,25 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
 
     public String[] getExcludeBlockTypes() {
         return excludeBlockTypes;
+    }
+
+    @Nonnull
+    public String[] getIncludeBlockGroups() {
+        return includeBlockGroups;
+    }
+
+    @Nonnull
+    public String[] getExcludeBlockGroups() {
+        return excludeBlockGroups;
+    }
+
+    @Nonnull
+    public String[] getIncludeHitboxTypes() {
+        return includeHitboxTypes;
+    }
+
+    @Nonnull
+    public String[] getExcludeHitboxTypes() {
+        return excludeHitboxTypes;
     }
 }

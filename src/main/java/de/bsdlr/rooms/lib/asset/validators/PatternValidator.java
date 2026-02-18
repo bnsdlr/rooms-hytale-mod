@@ -1,4 +1,4 @@
-package de.bsdlr.rooms.lib.asset.pattern;
+package de.bsdlr.rooms.lib.asset.validators;
 
 import com.hypixel.hytale.codec.schema.SchemaContext;
 import com.hypixel.hytale.codec.schema.config.Schema;
@@ -9,9 +9,13 @@ import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 
 import javax.annotation.Nonnull;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class PatternValidator implements Validator<String> {
-    public static final PatternValidator BLOCK_TYPE_KEYS_VALIDATOR = new PatternValidator(BlockType.getAssetMap().getAssetMap().keySet(), "Pattern doesn't match any existing block id.");
+    public static final PatternValidator BLOCK_IDS;
+    public static final PatternValidator BLOCK_GROUPS;
+    public static final PatternValidator HITBOX_TYPES;
+
     @Nonnull
     private final Set<String> options;
     private final String noMatchError;
@@ -47,5 +51,13 @@ public class PatternValidator implements Validator<String> {
     @Override
     public void updateSchema(SchemaContext schemaContext, Schema schema) {
 
+    }
+
+    static {
+        BLOCK_IDS = new PatternValidator(BlockType.getAssetMap().getAssetMap().keySet(), "Pattern doesn't match any existing block id.");
+        Set<String> blockGroups = BlockType.getAssetMap().getAssetMap().values().stream().map(BlockType::getGroup).collect(Collectors.toSet());
+        BLOCK_GROUPS = new PatternValidator(blockGroups, "String doesn't match any existing block group.");
+        Set<String> hitboxTypes = BlockType.getAssetMap().getAssetMap().values().stream().map(BlockType::getHitboxType).collect(Collectors.toSet());
+        HITBOX_TYPES = new PatternValidator(hitboxTypes, "String doesn't match any existing hitbox type.");
     }
 }

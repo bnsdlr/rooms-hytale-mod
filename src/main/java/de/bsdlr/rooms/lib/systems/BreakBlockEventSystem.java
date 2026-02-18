@@ -51,6 +51,7 @@ public class BreakBlockEventSystem extends EntityEventSystem<EntityStore, BreakB
 
         Map<Long, BlockType> overrideBlocks = new HashMap<>();
 
+        // TODO: get room block and set filler blocks if needed
         for (Vector3i pos : BlockUtils.getAllOccupiedPositions(world, event.getBlockType(), target)) {
             long key = PositionUtils.pack3dPos(pos);
             overrideBlocks.put(key, BlockType.EMPTY);

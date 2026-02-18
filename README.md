@@ -6,9 +6,9 @@
 ## ToDo
 
 - [ ] DO SOME PERFORMANCE/MEMORY OPTIMIZATIONS...
+  - [ ] ScoreGroup find all matching block ids at start?
 - [ ] rooms
     - [ ] more complex room definitions
-      - [ ] blocks of group
       - [ ] block type
     - [ ] buffs for having room
     - [ ] room info ui (where you can change the room type, every 5min, in game day or sth)
@@ -18,6 +18,7 @@
       - [ ] place anywhere on tables
       - [ ] any rotation (of the set)
       - [ ] add required rotation (relative)
+    - [ ] able to set rotation for blocks
 - [ ] if multiple rooms match, give ability to choose from them.
-- [ ] always add root block ...
+- [ ] always add root block. the problem is that you cannot call a store method from a system... (at least I don't know how you could do that, or what else is the cause of the IllegalStateException)
 

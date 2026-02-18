@@ -305,8 +305,7 @@ public class Room {
             }
 
             for (RoomType type : RoomType.getAssetMap().getAssetMap().values()) {
-                if (type.minArea > area) continue;
-                boolean matches = type.matches(blockId2Count, wallBlockId2Count, wallBlockCount, floorBlockId2Count, floorBlockCount);
+                boolean matches = type.matches(area, blockId2Count, wallBlockId2Count, wallBlockCount, floorBlockId2Count, floorBlockCount);
                 if (matches) {
                     matching.add(type);
                     LOGGER.atInfo().log("room %s matches", type.getId());

@@ -120,20 +120,45 @@ public class RoomBlock {
         @Nonnull
         private final BlockType type;
         @Nonnull
-        private final Vector3i pos;
+        private Vector3i pos;
         @Nonnull
         private final RoomBlockRole role;
         private Vector3i filler = null;
 
-        public Builder(@Nonnull BlockType type, @Nonnull Vector3i vec) {
+        public Builder(@Nonnull BlockType type, @Nonnull Vector3i pos) {
             this.type = type;
-            this.pos = vec;
+            this.pos = pos;
             this.role = RoomBlockRole.getRole(type);
         }
 
         public Builder setFiller(ChunkStore chunkStore) {
             this.filler = BlockUtils.getFiller(chunkStore, pos.x, pos.y, pos.z);
             return this;
+        }
+
+        public Builder setToRootBlock() {
+            this.pos = BlockUtils.getRoot(this.filler, this.pos);
+            this.filler = null;
+            return this;
+        }
+
+        @Nonnull
+        public BlockType getType() {
+            return type;
+        }
+
+        @Nonnull
+        public Vector3i getPos() {
+            return pos;
+        }
+
+        @Nonnull
+        public RoomBlockRole getRole() {
+            return role;
+        }
+
+        public Vector3i getFiller() {
+            return filler;
         }
 
         public RoomBlock build() {
