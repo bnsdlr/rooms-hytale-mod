@@ -1,6 +1,21 @@
-rooms.rooms.Test.name=Test Name
-rooms.rooms.Test.description=Test Description
-rooms.rooms.Simple_Bed_Room.name=Simple Bed Room
+
+# === Bedrooms ===
+
+rooms.rooms.bedrooms.Basic_Bedroom.name=Basic Bedroom
+rooms.rooms.bedrooms.Basic_Bedroom.description=Residents will sleep in the beds.\n\nNote: Will create a Hotel when built next to a Reception Room.
+rooms.rooms.bedrooms.Social_Bedroom.name=Social Bedroom
+rooms.rooms.bedrooms.Social_Bedroom.description=Residents will sleep in the beds.
+rooms.rooms.bedrooms.Communal_Bedroom.name=Communal Bedroom
+rooms.rooms.bedrooms.Communal_Bedroom.description=Residents will sleep in the beds.
+rooms.rooms.bedrooms.Billet.name=Billet
+rooms.rooms.bedrooms.Billet.description=Residents will sleep in the beds.
+rooms.rooms.bedrooms.Barracks.name=Barracks
+rooms.rooms.bedrooms.Barracks.description=Residents will sleep in the beds.
+rooms.rooms.bedrooms.Garrison.name=Garrison
+rooms.rooms.bedrooms.Garrison.description=Residents will sleep in the beds.
+
+# === Qualities ===
+
 rooms.qualities.Common=Common
 rooms.qualities.Debug=Debug
 rooms.qualities.Developer=Developer

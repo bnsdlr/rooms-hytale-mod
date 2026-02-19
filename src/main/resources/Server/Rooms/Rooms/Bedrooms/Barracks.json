@@ -26,5 +26,6 @@
   "RoomTranslationProperties": {
     "Name": "server.rooms.rooms.bedrooms.Barracks.name",
     "Description": "server.rooms.rooms.bedrooms.Barracks.description"
-  }
+  },
+  "Score": 100
 }

@@ -12,6 +12,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.codec.validation.validator.ArrayValidator;
 import com.hypixel.hytale.common.util.StringUtil;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
+import de.bsdlr.rooms.lib.asset.validators.OtherValidators;
 import de.bsdlr.rooms.lib.asset.validators.PatternValidator;
 
 import javax.annotation.Nonnull;
@@ -70,7 +71,7 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
             .documentation("Defines blocks (by group) that should be in the group.")
             .addValidator(Validators.nonNull())
             .addValidator(Validators.nonNullArrayElements())
-            .addValidator(new ArrayValidator<>(PatternValidator.BLOCK_GROUPS))
+            .addValidator(new ArrayValidator<>(OtherValidators.BLOCK_GROUPS))
             .add()
             .appendInherited(new KeyedCodec<>("ExcludeBlockGroups", Codec.STRING_ARRAY),
                     (scoreGroup, s) -> scoreGroup.excludeBlockGroups = s,
@@ -80,7 +81,7 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
             .documentation("Defines blocks (by group) that should NOT be in the group.")
             .addValidator(Validators.nonNull())
             .addValidator(Validators.nonNullArrayElements())
-            .addValidator(new ArrayValidator<>(PatternValidator.BLOCK_GROUPS))
+            .addValidator(new ArrayValidator<>(OtherValidators.BLOCK_GROUPS))
             .add()
 
             .appendInherited(new KeyedCodec<>("IncludeHitboxTypes", Codec.STRING_ARRAY),
@@ -91,7 +92,7 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
             .documentation("Defines blocks (by hitbox type) that should be in the group.")
             .addValidator(Validators.nonNull())
             .addValidator(Validators.nonNullArrayElements())
-            .addValidator(new ArrayValidator<>(PatternValidator.HITBOX_TYPES))
+            .addValidator(new ArrayValidator<>(OtherValidators.BLOCK_HITBOX_TYPE))
             .add()
             .appendInherited(new KeyedCodec<>("ExcludeHitboxTypes", Codec.STRING_ARRAY),
                     (scoreGroup, s) -> scoreGroup.excludeHitboxTypes = s,
@@ -101,7 +102,7 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
             .documentation("Defines blocks (by hitbox type) that should NOT be in the group.")
             .addValidator(Validators.nonNull())
             .addValidator(Validators.nonNullArrayElements())
-            .addValidator(new ArrayValidator<>(PatternValidator.HITBOX_TYPES))
+            .addValidator(new ArrayValidator<>(OtherValidators.BLOCK_HITBOX_TYPE))
             .add()
             .build();
     private static AssetStore<String, ScoreGroup, IndexedLookupTableAssetMap<String, ScoreGroup>> ASSET_STORE;

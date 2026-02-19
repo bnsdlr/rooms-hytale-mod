@@ -18,5 +18,6 @@
   "RoomTranslationProperties": {
     "Name": "server.rooms.rooms.bedrooms.Billet.name",
     "Description": "server.rooms.rooms.bedrooms.Billet.description"
-  }
+  },
+  "Score": 50
 }

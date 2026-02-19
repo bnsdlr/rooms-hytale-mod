@@ -6,6 +6,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.logger.HytaleLogger;
 import de.bsdlr.rooms.lib.asset.validators.PatternValidator;
+import de.bsdlr.rooms.lib.blocks.BlockPattern;
 import de.bsdlr.rooms.lib.room.RoomType;
 
 import javax.annotation.Nonnull;
@@ -13,13 +14,11 @@ import javax.annotation.Nonnull;
 public class SimpleRoomBlockType {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     public static final BuilderCodec<SimpleRoomBlockType> CODEC = BuilderCodec.builder(SimpleRoomBlockType.class, SimpleRoomBlockType::new)
-            .appendInherited(new KeyedCodec<>("BlockIdPattern", Codec.STRING),
-                    ((roomBlockType, s) -> roomBlockType.blockIdPattern = s),
-                    (roomBlockType -> roomBlockType.blockIdPattern),
-                    ((roomBlockType, parent) -> roomBlockType.blockIdPattern = parent.blockIdPattern)
+            .appendInherited(new KeyedCodec<>("BlockPattern", BlockPattern.CODEC),
+                    ((roomBlockType, s) -> roomBlockType.blockPattern = s),
+                    (roomBlockType -> roomBlockType.blockPattern),
+                    ((roomBlockType, parent) -> roomBlockType.blockPattern = parent.blockPattern)
             )
-            .addValidator(Validators.nonNull())
-            .addValidator(PatternValidator.BLOCK_IDS)
             .add()
             .appendInherited(new KeyedCodec<>("CountsAs", Codec.DOUBLE),
                     ((roomBlockType, s) -> roomBlockType.countsAs = s),
@@ -29,7 +28,7 @@ public class SimpleRoomBlockType {
             .add()
             .build();
     @Nonnull
-    protected String blockIdPattern = "*";
+    protected BlockPattern blockPattern = new BlockPattern();
     protected double countsAs = 1;
 
     private String[] blockIds;
@@ -38,7 +37,7 @@ public class SimpleRoomBlockType {
     }
 
     public SimpleRoomBlockType(@Nonnull SimpleRoomBlockType o) {
-        this.blockIdPattern = o.blockIdPattern;
+        this.blockPattern = o.blockPattern;
         this.countsAs = o.countsAs;
         this.blockIds = o.blockIds;
     }
@@ -49,7 +48,7 @@ public class SimpleRoomBlockType {
 
     public static void addMatchingBlockIds(@Nonnull SimpleRoomBlockType simpleRoomBlockType, RoomType roomType) {
         simpleRoomBlockType.blockIds =
-                RoomBlockType.getMatchingBlockIds(simpleRoomBlockType.getBlockIdPattern(), roomType).toArray(String[]::new);
+                RoomBlockType.getMatchingBlockIds(simpleRoomBlockType.getBlockPattern(), roomType).toArray(String[]::new);
     }
 
     public String[] getMatchingBlockIds() {
@@ -58,8 +57,8 @@ public class SimpleRoomBlockType {
     }
 
     @Nonnull
-    public String getBlockIdPattern() {
-        return blockIdPattern;
+    public BlockPattern getBlockPattern() {
+        return blockPattern;
     }
 
     public double getCountsAs() {

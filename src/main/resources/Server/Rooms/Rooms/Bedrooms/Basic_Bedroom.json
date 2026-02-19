@@ -4,9 +4,7 @@
     {
       "MinCount": 2,
       "BlockPattern": {
-        "Light": {
-          "Enabled": true
-        }
+        "BlockIdPattern": "*Bed*"
       }
     }
   ],

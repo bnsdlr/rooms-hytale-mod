@@ -443,61 +443,50 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
     }
 
     public boolean matches(int area, Map<String, Integer> blockId2Count, Map<String, Integer> wallBlockId2Count, int wallBlockCount, Map<String, Integer> floorBlockId2Count, int floorBlockCount) {
-        if (area < minArea) return false;
-        boolean matches = true;
+        LOGGER.atInfo().log("===== Start matching room. =====");
+        if (area < minArea) {
+            LOGGER.atWarning().log("%d does not match: minArea is %d; area is: %d", id, minArea, area);
+            return false;
+        }
 
         if (disallowedBlockIdPatterns != null) {
             for (String blockId : blockId2Count.keySet()) {
                 for (String disallowedBlockIdPattern : disallowedBlockIdPatterns) {
                     if (StringUtil.isGlobMatching(disallowedBlockIdPattern, blockId)) {
-                        LOGGER.atInfo().log("%s is disallowed by the pattern: %s", blockId, disallowedBlockIdPattern);
+                        LOGGER.atWarning().log("%d does not match: %s is disallowed by the pattern: %s", id, blockId, disallowedBlockIdPattern);
                         return false;
                     }
                 }
             }
         }
 
-//                LOGGER.atInfo().log("block count: %d", type.getRoomBlocks().length);
         for (RoomBlockType blockType : getRoomBlocks()) {
             int count = (int) Math.floor(blockType.getCount(blockId2Count));
-            LOGGER.atInfo().log("%d matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
+//            LOGGER.atInfo().log("%d matches for %s (min: %d, max: %d)", count, blockType.getBlockPattern().getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
             if (blockType.getMinCount() > count || blockType.getMaxCount() < count) {
-                matches = false;
-                break;
+                LOGGER.atWarning().log("%s does not match: count %d is not in [%d, %d] (pattern: %s)", id, count, blockType.getMinCount(), blockType.getMaxCount(), blockType.getBlockPattern());
+                return false;
             }
         }
 
-        if (!matches) return false;
+        if (!RoomType.boundBlocksMatch(id, wallBlockId2Count, wallBlockCount, wallBlocks)) return false;
+        return RoomType.boundBlocksMatch(id, floorBlockId2Count, floorBlockCount, floorBlocks);
+    }
 
-        for (BoundRoomBlockType blockType : getWallBlocks()) {
-            double count = blockType.getCount(wallBlockId2Count);
-            LOGGER.atInfo().log("(WALL) %f matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
+    public static boolean boundBlocksMatch(String id, Map<String, Integer> boundBlockId2Count, int boundBlockCount, BoundRoomBlockType[] blocks) {
+        for (BoundRoomBlockType blockType : blocks) {
+            double count = blockType.getCount(boundBlockId2Count);
+//            LOGGER.atInfo().log("(FLOOR) %f matches for %s (min: %d, max: %d)", count, blockType.getBlockPattern(), blockType.getMinCount(), blockType.getMaxCount());
 
-            double percentage = (count / wallBlockCount) * 100;
-            LOGGER.atInfo().log("%f / %d = %f", count, wallBlockCount, percentage);
+            double percentage = (count / boundBlockCount) * 100;
+//            LOGGER.atInfo().log("%f / %d = %f", count, floorBlockCount, percentage);
 
             if (blockType.getMinPercentage() > percentage || blockType.getMaxPercentage() < percentage || blockType.getMinCount() > count || blockType.getMaxCount() < count) {
-                matches = false;
-                break;
+                LOGGER.atWarning().log("%s does not match: %d is not in [%d, %d]; %.2f%% is not in [%.2f%%..%.2f%%]", id, count, blockType.getMinCount(), blockType.getMaxCount(), percentage, blockType.getMinPercentage(), blockType.getMaxPercentage());
+                return false;
             }
         }
-
-        if (!matches) return false;
-
-        for (BoundRoomBlockType blockType : getFloorBlocks()) {
-            double count = blockType.getCount(floorBlockId2Count);
-            LOGGER.atInfo().log("(FLOOR) %f matches for %s (min: %d, max: %d)", count, blockType.getBlockIdPattern(), blockType.getMinCount(), blockType.getMaxCount());
-
-            double percentage = (count / floorBlockCount) * 100;
-            LOGGER.atInfo().log("%f / %d = %f", count, floorBlockCount, percentage);
-
-            if (blockType.getMinPercentage() > percentage || blockType.getMaxPercentage() < percentage || blockType.getMinCount() > count || blockType.getMaxCount() < count) {
-                matches = false;
-                break;
-            }
-        }
-
-        return matches;
+        return true;
     }
 
     public boolean isBlockIdAllowed(BlockType type) {

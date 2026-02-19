@@ -13,8 +13,6 @@ import java.util.stream.Collectors;
 
 public class PatternValidator implements Validator<String> {
     public static final PatternValidator BLOCK_IDS;
-    public static final PatternValidator BLOCK_GROUPS;
-    public static final PatternValidator HITBOX_TYPES;
 
     @Nonnull
     private final Set<String> options;
@@ -55,9 +53,5 @@ public class PatternValidator implements Validator<String> {
 
     static {
         BLOCK_IDS = new PatternValidator(BlockType.getAssetMap().getAssetMap().keySet(), "Pattern doesn't match any existing block id.");
-        Set<String> blockGroups = BlockType.getAssetMap().getAssetMap().values().stream().map(BlockType::getGroup).collect(Collectors.toSet());
-        BLOCK_GROUPS = new PatternValidator(blockGroups, "String doesn't match any existing block group.");
-        Set<String> hitboxTypes = BlockType.getAssetMap().getAssetMap().values().stream().map(BlockType::getHitboxType).collect(Collectors.toSet());
-        HITBOX_TYPES = new PatternValidator(hitboxTypes, "String doesn't match any existing hitbox type.");
     }
 }

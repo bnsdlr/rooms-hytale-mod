@@ -20,5 +20,6 @@
   "RoomTranslationProperties": {
     "Name": "server.rooms.rooms.bedrooms.Communal_Bedroom.name",
     "Description": "server.rooms.rooms.bedrooms.Communal_Bedroom.description"
-  }
+  },
+  "Score": 100
 }

@@ -23,13 +23,11 @@ public class RoomBlockType {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     public static final ValidatorCache<RoomBlockType> VALIDATOR_CACHE = new ValidatorCache<>(new RoomBlockTypeValidator());
     public static final BuilderCodec<RoomBlockType> CODEC = BuilderCodec.builder(RoomBlockType.class, RoomBlockType::new)
-            .appendInherited(new KeyedCodec<>("BlockIdPattern", Codec.STRING),
-                    ((roomBlockType, s) -> roomBlockType.blockIdPattern = s),
-                    (roomBlockType -> roomBlockType.blockIdPattern),
-                    ((roomBlockType, parent) -> roomBlockType.blockIdPattern = parent.blockIdPattern)
+            .appendInherited(new KeyedCodec<>("BlockPattern", BlockPattern.CODEC),
+                    ((roomBlockType, s) -> roomBlockType.blockPattern = s),
+                    (roomBlockType -> roomBlockType.blockPattern),
+                    ((roomBlockType, parent) -> roomBlockType.blockPattern = parent.blockPattern)
             )
-            .addValidator(Validators.nonNull())
-            .addValidator(PatternValidator.BLOCK_IDS)
             .add()
             .appendInherited(new KeyedCodec<>("MinCount", Codec.INTEGER),
                     ((roomBlockType, s) -> roomBlockType.minCount = s),
@@ -53,10 +51,7 @@ public class RoomBlockType {
             .add()
             .build();
     @Nonnull
-    protected String blockIdPattern = "*";
     protected BlockPattern blockPattern = new BlockPattern();
-    @Nonnull
-    protected Light light;
     protected int minCount = 1;
     protected int maxCount = Integer.MAX_VALUE;
     protected SimpleRoomBlockType[] logicOrs = new SimpleRoomBlockType[0];
@@ -67,8 +62,7 @@ public class RoomBlockType {
     }
 
     public RoomBlockType(@Nonnull RoomBlockType other) {
-        this.blockIdPattern = other.blockIdPattern;
-        this.light = other.light;
+        this.blockPattern = other.blockPattern;
         this.minCount = other.minCount;
         this.maxCount = other.maxCount;
         this.logicOrs = other.logicOrs;
@@ -76,13 +70,13 @@ public class RoomBlockType {
     }
 
     @Nonnull
-    public static List<String> getMatchingBlockIds(@Nonnull String blockIdPattern, RoomType roomType) {
+    public static List<String> getMatchingBlockIds(@Nonnull BlockPattern blockPattern, RoomType roomType) {
         List<String> matchingBlockIds = new ArrayList<>();
 
         for (BlockType type : BlockType.getAssetMap().getAssetMap().values()) {
             if (roomType != null && !roomType.isBlockIdAllowed(type)) continue;
 
-            if (StringUtil.isGlobMatching(blockIdPattern, type.getId())) {
+            if (blockPattern.matches(type)) {
                 matchingBlockIds.add(type.getId());
             }
         }
@@ -96,7 +90,7 @@ public class RoomBlockType {
 
     public static void addMatchingBlockIds(@Nonnull RoomBlockType roomBlockType, RoomType roomType) {
         roomBlockType.blockIds =
-                RoomBlockType.getMatchingBlockIds(roomBlockType.getBlockIdPattern(), roomType).toArray(String[]::new);
+                RoomBlockType.getMatchingBlockIds(roomBlockType.getBlockPattern(), roomType).toArray(String[]::new);
     }
 
     public static void addMatchingBlockIdsForLogicOrs(RoomBlockType roomBlockType, RoomType roomType) {
@@ -105,23 +99,14 @@ public class RoomBlockType {
         }
     }
 
-    public boolean matches(String blockId) {
-        return StringUtil.isGlobMatching(blockIdPattern, blockId);
-    }
-
     public String[] getMatchingBlockIds() {
         if (this.blockIds == null) addMatchingBlockIds(this);
         return this.blockIds;
     }
 
     @Nonnull
-    public String getBlockIdPattern() {
-        return blockIdPattern;
-    }
-
-    @Nonnull
-    public Light getLight() {
-        return light;
+    public BlockPattern getBlockPattern() {
+        return blockPattern;
     }
 
     public int getMinCount() {

@@ -30,14 +30,13 @@ public class BlockPattern {
                     (blockPattern -> blockPattern.group),
                     ((blockPattern, parent) -> blockPattern.group = parent.group)
             )
-            .addValidator(PatternValidator.BLOCK_GROUPS)
+            .addValidator(OtherValidators.BLOCK_GROUPS)
             .add()
             .appendInherited(new KeyedCodec<>("Light", Light.CODEC),
                     ((blockPattern, s) -> blockPattern.light = s),
                     (blockPattern -> blockPattern.light),
                     ((blockPattern, parent) -> blockPattern.light = parent.light)
             )
-            .addValidator(Validators.nonNull())
             .add()
             .appendInherited(new KeyedCodec<>("CustomModel", Codec.STRING),
                     ((blockPattern, s) -> blockPattern.customModel = s),
@@ -65,17 +64,26 @@ public class BlockPattern {
             )
             .addValidator(OtherValidators.BLOCK_HITBOX_TYPE)
             .add()
+            .afterDecode(blockPattern -> {
+                if (blockPattern.group != null && blockPattern.group.isBlank()) blockPattern.group = null;
+                if (blockPattern.customModel != null && blockPattern.customModel.isBlank())
+                    blockPattern.customModel = null;
+                if (blockPattern.hitboxType != null && blockPattern.hitboxType.isBlank())
+                    blockPattern.hitboxType = null;
+            })
             .build();
     @Nonnull
     protected String blockIdPattern = "*";
     protected String group;
-    protected Light light;
+    @Nonnull
+    protected Light light = new Light();
     protected String customModel;
     protected DrawType drawType;
     protected Opacity opacity;
     protected String hitboxType;
 
-    public BlockPattern() {}
+    public BlockPattern() {
+    }
 
     public BlockPattern(@Nonnull BlockPattern other) {
         this.blockIdPattern = other.blockIdPattern;
@@ -96,6 +104,7 @@ public class BlockPattern {
         return group;
     }
 
+    @Nonnull
     public Light getLight() {
         return light;
     }
@@ -119,10 +128,45 @@ public class BlockPattern {
     public boolean matches(BlockType type) {
         if (!StringUtil.isGlobMatching(blockIdPattern, type.getId())) return false;
         if (group != null && !group.equals(type.getGroup())) return false;
-        if (light != null && !light.matches(type.getLight())) return false;
+        if (light.isEnabled() && !light.matches(type.getLight())) return false;
         if (customModel != null && !customModel.equals(type.getCustomModel())) return false;
         if (drawType != null && !drawType.equals(type.getDrawType())) return false;
         if (opacity != null && !opacity.equals(type.getOpacity())) return false;
         return hitboxType == null || hitboxType.equals(type.getHitboxType());
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+
+        builder.append("BlockPattern{blockIdPattern=");
+        builder.append(blockIdPattern);
+        builder.append(",light=");
+        builder.append(light);
+
+        if (group != null) {
+            builder.append(",group=");
+            builder.append(group);
+        }
+        if (customModel != null) {
+            builder.append(",customModel=");
+            builder.append(customModel);
+        }
+        if (drawType != null) {
+            builder.append(",drawType=");
+            builder.append(drawType);
+        }
+        if (opacity != null) {
+            builder.append(",opacity=");
+            builder.append(opacity);
+        }
+        if (hitboxType != null) {
+            builder.append(",hitboxType=");
+            builder.append(hitboxType);
+        }
+
+        builder.append("}");
+
+        return builder.toString();
     }
 }

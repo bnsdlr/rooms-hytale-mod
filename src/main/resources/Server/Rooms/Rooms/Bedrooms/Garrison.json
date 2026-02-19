@@ -26,5 +26,6 @@
   "RoomTranslationProperties": {
     "Name": "server.rooms.rooms.bedrooms.Garrison.name",
     "Description": "server.rooms.rooms.bedrooms.Garrison.description"
-  }
+  },
+  "Score": 150
 }

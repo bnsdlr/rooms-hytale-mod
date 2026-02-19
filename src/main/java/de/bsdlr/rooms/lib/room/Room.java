@@ -88,6 +88,7 @@ public class Room {
         this.boxes = boxes;
         this.blockMap = blockMap;
         this.area = area;
+        this.validated = true;
     }
 
     @Override
@@ -309,6 +310,8 @@ public class Room {
                 if (matches) {
                     matching.add(type);
                     LOGGER.atInfo().log("room %s matches", type.getId());
+                } else {
+                    LOGGER.atInfo().log("room %s does not match", type.getId());
                 }
             }
 
@@ -337,7 +340,7 @@ public class Room {
         }
 
         private int calculateScore(RoomType roomType, Map<String, Integer> blockId2Count, Map<String, Integer> wallBlockId2Count, Map<String, Integer> floorBlockId2Count) {
-            int score = 0;
+            int score = roomType.getScore();
 
             for (Map.Entry<String, Integer> entry : blockId2Count.entrySet()) {
                 BlockType type = BlockType.fromString(entry.getKey());
@@ -346,7 +349,6 @@ public class Room {
 
                 for (ScoreGroup group : ScoreGroup.getAssetMap().getAssetMap().values()) {
                     if (group.matches(type)) {
-                        LOGGER.atInfo().log("matches");
                         score += group.getScore() * entry.getValue();
                     }
                 }

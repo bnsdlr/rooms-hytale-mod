@@ -3,6 +3,7 @@ package de.bsdlr.rooms.ui;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
+import com.hypixel.hytale.server.core.modules.i18n.I18nModule;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import de.bsdlr.rooms.lib.room.Room;
@@ -32,6 +33,10 @@ public class RoomHud extends CustomUIHud {
 
     public void update(@Nonnull Room room) {
         RoomType type = room.getType();
+        if (type == null) {
+            LOGGER.atSevere().log("RoomType with id %s not existing.", room.getRoomTypeId());
+            return;
+        }
         RoomTranslationProperties translationProperties = type.getTranslationProperties();
 
         StringBuilder nameBuilder = new StringBuilder();
@@ -47,13 +52,14 @@ public class RoomHud extends CustomUIHud {
         }
 
         nameBuilder.append(translationProperties != null && translationProperties.getName() != null
-                ? translationProperties.getName()
+                ? /*Message.translation(translationProperties.getName())*/ I18nModule.get().getMessage("en-US", translationProperties.getName())
                 : type.getId().replace('_', ' '));
 
         String name = nameBuilder.toString();
 
         String description = translationProperties != null && translationProperties.getDescription() != null
-                ? translationProperties.getDescription() : null;
+                ? /*translationProperties.getDescription()*/ I18nModule.get().getMessage("en-US", translationProperties.getDescription())
+                : null;
 
         LOGGER.atInfo().log("name: %s", name);
         LOGGER.atInfo().log("score: %d", room.getScore());

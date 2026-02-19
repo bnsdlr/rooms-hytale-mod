@@ -8,6 +8,7 @@ import com.hypixel.hytale.common.util.StringUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import de.bsdlr.rooms.lib.asset.validators.PatternValidator;
+import de.bsdlr.rooms.lib.blocks.BlockPattern;
 import de.bsdlr.rooms.lib.room.RoomType;
 
 import javax.annotation.Nonnull;
@@ -18,13 +19,11 @@ import java.util.Map;
 public class BoundRoomBlockType {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     public static final BuilderCodec<BoundRoomBlockType> CODEC = BuilderCodec.builder(BoundRoomBlockType.class, BoundRoomBlockType::new)
-            .appendInherited(new KeyedCodec<>("BlockIdPattern", Codec.STRING),
-                    ((roomBlockType, s) -> roomBlockType.blockIdPattern = s),
-                    (roomBlockType -> roomBlockType.blockIdPattern),
-                    ((roomBlockType, parent) -> roomBlockType.blockIdPattern = parent.blockIdPattern)
+            .appendInherited(new KeyedCodec<>("BlockPattern", BlockPattern.CODEC),
+                    ((roomBlockType, s) -> roomBlockType.blockPattern = s),
+                    (roomBlockType -> roomBlockType.blockPattern),
+                    ((roomBlockType, parent) -> roomBlockType.blockPattern = parent.blockPattern)
             )
-            .addValidator(Validators.nonNull())
-            .addValidator(PatternValidator.BLOCK_IDS)
             .add()
             .appendInherited(new KeyedCodec<>("MinPercentage", Codec.DOUBLE),
                     ((roomBlockType, s) -> roomBlockType.minPercentage = s),
@@ -57,7 +56,7 @@ public class BoundRoomBlockType {
             .add()
             .build();
     @Nonnull
-    protected String blockIdPattern = "*";
+    protected BlockPattern blockPattern = new BlockPattern();
     protected double minPercentage = 0;
     protected double maxPercentage = 1.0;
     protected int minCount = 1;
@@ -69,7 +68,7 @@ public class BoundRoomBlockType {
     }
 
     public BoundRoomBlockType(@Nonnull BoundRoomBlockType other) {
-        this.blockIdPattern = other.blockIdPattern;
+        this.blockPattern = other.blockPattern;
         this.minPercentage = other.minPercentage;
         this.maxPercentage = other.maxPercentage;
         this.minCount = other.minCount;
@@ -78,14 +77,14 @@ public class BoundRoomBlockType {
     }
 
     @Nonnull
-    public static List<String> getMatchingBlockIds(@Nonnull String blockIdPattern, RoomType roomType) {
+    public static List<String> getMatchingBlockIds(@Nonnull BlockPattern blockPattern, RoomType roomType) {
         List<String> matchingBlockIds = new ArrayList<>();
 
         for (BlockType type : BlockType.getAssetMap().getAssetMap().values()) {
             if (type == null) continue;
             if (roomType != null && !roomType.isBlockIdAllowed(type)) continue;
 
-            if (StringUtil.isGlobMatching(blockIdPattern, type.getId())) {
+            if (blockPattern.matches(type)) {
                 if (RoomBlockRole.getRole(type).isSolid()) {
                     matchingBlockIds.add(type.getId());
                 }
@@ -101,11 +100,7 @@ public class BoundRoomBlockType {
 
     public static void addMatchingBlockIds(@Nonnull BoundRoomBlockType roomBlockType, RoomType roomType) {
         roomBlockType.blockIds =
-                BoundRoomBlockType.getMatchingBlockIds(roomBlockType.getBlockIdPattern(), roomType).toArray(String[]::new);
-    }
-
-    public boolean matches(String blockId) {
-        return StringUtil.isGlobMatching(blockIdPattern, blockId);
+                BoundRoomBlockType.getMatchingBlockIds(roomBlockType.getBlockPattern(), roomType).toArray(String[]::new);
     }
 
     public String[] getMatchingBlockIds() {
@@ -114,8 +109,8 @@ public class BoundRoomBlockType {
     }
 
     @Nonnull
-    public String getBlockIdPattern() {
-        return blockIdPattern;
+    public BlockPattern getBlockPattern() {
+        return blockPattern;
     }
 
     public double getMinPercentage() {

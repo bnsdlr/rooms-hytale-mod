@@ -20,5 +20,6 @@
   "RoomTranslationProperties": {
     "Name": "server.rooms.rooms.bedrooms.Social_Bedroom.name",
     "Description": "server.rooms.rooms.bedrooms.Social_Bedroom.description"
-  }
+  },
+  "Score": 50
 }
