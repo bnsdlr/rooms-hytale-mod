@@ -1,0 +1,24 @@
+{
+  "Quality": "Common",
+  "RoomBlocks": [
+    {
+      "BlockPattern": {
+        "Light": {
+          "Enabled": true
+        }
+      },
+      "MinCount": 4
+    },
+    {
+      "MinCount": 8,
+      "BlockPattern": {
+        "BlockIdPattern": "*Bed*"
+      }
+    }
+  ],
+  "Group": "Bedroom",
+  "RoomTranslationProperties": {
+    "Name": "server.rooms.rooms.bedrooms.Communal_Bedroom.name",
+    "Description": "server.rooms.rooms.bedrooms.Communal_Bedroom.description"
+  }
+}

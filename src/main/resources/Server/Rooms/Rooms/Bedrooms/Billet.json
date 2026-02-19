@@ -1,0 +1,22 @@
+{
+  "Quality": "Common",
+  "RoomBlocks": [
+    {
+      "MinCount": 2,
+      "BlockPattern": {
+        "BlockIdPattern": "*Bed*"
+      }
+    },
+    {
+      "BlockPattern": {
+        "BlockIdPattern": "Tinkering_Target_Dummy"
+      },
+      "MinCount": 1
+    }
+  ],
+  "Group": "Bedroom",
+  "RoomTranslationProperties": {
+    "Name": "server.rooms.rooms.bedrooms.Billet.name",
+    "Description": "server.rooms.rooms.bedrooms.Billet.description"
+  }
+}

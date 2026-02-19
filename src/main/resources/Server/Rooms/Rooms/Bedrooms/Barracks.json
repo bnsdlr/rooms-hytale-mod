@@ -1,0 +1,30 @@
+{
+  "Quality": "Common",
+  "RoomBlocks": [
+    {
+      "BlockPattern": {
+        "Light": {
+          "Enabled": true
+        }
+      },
+      "MinCount": 2
+    },
+    {
+      "MinCount": 4,
+      "BlockPattern": {
+        "BlockIdPattern": "*Bed*"
+      }
+    },
+    {
+      "BlockPattern": {
+        "BlockIdPattern": "Tinkering_Target_Dummy"
+      },
+      "MinCount": 2
+    }
+  ],
+  "Group": "Bedroom",
+  "RoomTranslationProperties": {
+    "Name": "server.rooms.rooms.bedrooms.Barracks.name",
+    "Description": "server.rooms.rooms.bedrooms.Barracks.description"
+  }
+}

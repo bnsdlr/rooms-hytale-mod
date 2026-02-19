@@ -1,0 +1,18 @@
+{
+  "Quality": "Common",
+  "RoomBlocks": [
+    {
+      "MinCount": 2,
+      "BlockPattern": {
+        "Light": {
+          "Enabled": true
+        }
+      }
+    }
+  ],
+  "Group": "Bedroom",
+  "RoomTranslationProperties": {
+    "Name": "server.rooms.rooms.bedrooms.Basic_Bedroom.name",
+    "Description": "server.rooms.rooms.bedrooms.Basic_Bedroom.description"
+  }
+}
