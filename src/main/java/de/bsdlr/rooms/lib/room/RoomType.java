@@ -64,6 +64,7 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
             .documentation("List of disallowed block groups.")
             .addValidator(Validators.nonNullArrayElements())
             .add()
+            // TODO: disallow blocks that damage entities
 //            .appendInherited(new KeyedCodec<>("DisallowedHitboxTypes", Codec.STRING_ARRAY),
 //                    ((roomType, s) -> roomType.disallowedHitboxTypes = s),
 //                    (roomType -> roomType.disallowedHitboxTypes),

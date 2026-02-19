@@ -22,7 +22,6 @@ import java.util.List;
 
 public class BlockUtils {
     public static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-    public static final AssetKeyValidator<String> BLOCK_ASSET_KEY_VALIDATOR = new AssetKeyValidator<>(BlockType::getAssetStore);
 
     public static List<Vector3i> getAllOccupiedPositions(World world, BlockType type, Vector3i target) throws WorldChunkNullException, MissingAssetException {
         WorldChunk chunk = world.getChunk(ChunkUtil.indexChunkFromBlock(target.x, target.z));

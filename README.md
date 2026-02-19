@@ -20,5 +20,6 @@
       - [ ] add required rotation (relative)
     - [ ] able to set rotation for blocks
 - [ ] if multiple rooms match, give ability to choose from them.
-- [ ] always add root block. the problem is that you cannot call a store method from a system... (at least I don't know how you could do that, or what else is the cause of the IllegalStateException)
+- [ ] always add root block. the problem is that you cannot call a store method from a system... (at least I don't know how you could do that, or what else is the cause of the IllegalStateException
+- [ ] add plaza (doormat, carpet and no door required)
 

@@ -9,7 +9,9 @@ import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.common.util.StringUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
+import de.bsdlr.rooms.lib.asset.Light;
 import de.bsdlr.rooms.lib.asset.validators.PatternValidator;
+import de.bsdlr.rooms.lib.blocks.BlockPattern;
 import de.bsdlr.rooms.lib.room.RoomType;
 
 import javax.annotation.Nonnull;
@@ -52,6 +54,9 @@ public class RoomBlockType {
             .build();
     @Nonnull
     protected String blockIdPattern = "*";
+    protected BlockPattern blockPattern = new BlockPattern();
+    @Nonnull
+    protected Light light;
     protected int minCount = 1;
     protected int maxCount = Integer.MAX_VALUE;
     protected SimpleRoomBlockType[] logicOrs = new SimpleRoomBlockType[0];
@@ -63,6 +68,7 @@ public class RoomBlockType {
 
     public RoomBlockType(@Nonnull RoomBlockType other) {
         this.blockIdPattern = other.blockIdPattern;
+        this.light = other.light;
         this.minCount = other.minCount;
         this.maxCount = other.maxCount;
         this.logicOrs = other.logicOrs;
@@ -111,6 +117,11 @@ public class RoomBlockType {
     @Nonnull
     public String getBlockIdPattern() {
         return blockIdPattern;
+    }
+
+    @Nonnull
+    public Light getLight() {
+        return light;
     }
 
     public int getMinCount() {

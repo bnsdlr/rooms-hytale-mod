@@ -15,6 +15,7 @@ import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import de.bsdlr.rooms.lib.asset.validators.PatternValidator;
 
 import javax.annotation.Nonnull;
+import java.nio.file.LinkOption;
 
 public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAssetMap<String, ScoreGroup>> {
     public static final AssetBuilderCodec<String, ScoreGroup> CODEC = AssetBuilderCodec.builder(
@@ -176,9 +177,9 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
 
         if (includeAll) return true;
 
-        boolean typeMatches = false;
-        boolean groupMatches = false;
-        boolean hitboxMatches = false;
+        boolean typeMatches = includeBlockTypes.length == 0;
+        boolean groupMatches = includeBlockGroups.length == 0;
+        boolean hitboxMatches = includeHitboxTypes.length == 0;
 
         for (String pattern : includeBlockTypes) {
             if (StringUtil.isGlobMatching(pattern, type.getId())) {

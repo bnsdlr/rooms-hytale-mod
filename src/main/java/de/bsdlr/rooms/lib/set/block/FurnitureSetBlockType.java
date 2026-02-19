@@ -4,7 +4,6 @@
 //import com.hypixel.hytale.codec.KeyedCodec;
 //import com.hypixel.hytale.codec.builder.BuilderCodec;
 //import com.hypixel.hytale.math.vector.Vector3i;
-//import de.bsdlr.rooms.utils.BlockUtils;
 //
 //import javax.annotation.Nonnull;
 //
@@ -15,7 +14,7 @@
 //                    (furnitureSetBlockType -> furnitureSetBlockType.blockId),
 //                    ((furnitureSetBlockType, parent) -> furnitureSetBlockType.blockId = parent.blockId)
 //            )
-//            .addValidator(BlockUtils.BLOCK_ASSET_KEY_VALIDATOR)
+//            .addValidator(OtherValidators.BLOCK_ASSET_KEY_VALIDATOR)
 //            .add()
 //            .appendInherited(new KeyedCodec<>("Offset", Vector3i.CODEC),
 //                    ((furnitureSetBlockType, s) -> furnitureSetBlockType.offset = s),

@@ -346,12 +346,15 @@ public class Room {
 
                 for (ScoreGroup group : ScoreGroup.getAssetMap().getAssetMap().values()) {
                     if (group.matches(type)) {
+                        LOGGER.atInfo().log("matches");
                         score += group.getScore() * entry.getValue();
                     }
                 }
 
                 score += roomType.getExtraScore(type.getId(), wallBlockId2Count, floorBlockId2Count) * entry.getValue();
             }
+
+            LOGGER.atInfo().log("score is %d", score);
 
             return score;
         }
