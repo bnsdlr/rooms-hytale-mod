@@ -1,0 +1,13 @@
+{
+  "Quality": "Common",
+  "RoomBlocks": [
+    {
+      "MinCount": 2,
+      "BlockPattern": {
+        "BlockIdPattern": "*Table*"
+      }
+    },
+    {}
+  ],
+  "Group": "Social_Space"
+}

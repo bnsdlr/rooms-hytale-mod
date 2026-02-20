@@ -162,7 +162,7 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
                     (roomType -> roomType.roomSizeIds),
                     ((roomType, parent) -> roomType.roomSizeIds = parent.roomSizeIds)
             )
-            .documentation("If no room sizes are selected it will default to all (select normal if you want no prefix...).")
+            .documentation("If no room sizes are selected it will default to all.")
             .addValidator(RoomSize.VALIDATOR_CACHE.getArrayValidator())
             .addValidator(Validators.nonNullArrayElements())
             .add()

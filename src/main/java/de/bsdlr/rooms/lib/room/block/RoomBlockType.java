@@ -9,6 +9,7 @@ import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import de.bsdlr.rooms.lib.blocks.BlockPattern;
+import de.bsdlr.rooms.lib.blocks.BlockSurroundings;
 import de.bsdlr.rooms.lib.room.RoomType;
 
 import javax.annotation.Nonnull;
@@ -49,6 +50,7 @@ public class RoomBlockType {
             .build();
     @Nonnull
     protected BlockPattern blockPattern = new BlockPattern();
+    protected BlockSurroundings blockSurroundings;
     protected int minCount = 1;
     protected int maxCount = Integer.MAX_VALUE;
     protected SimpleRoomBlockType[] logicOrs = new SimpleRoomBlockType[0];
