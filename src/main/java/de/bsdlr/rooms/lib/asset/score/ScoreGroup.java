@@ -16,7 +16,11 @@ import de.bsdlr.rooms.lib.asset.validators.OtherValidators;
 import de.bsdlr.rooms.lib.asset.validators.PatternValidator;
 
 import javax.annotation.Nonnull;
+import java.lang.reflect.Array;
 import java.nio.file.LinkOption;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAssetMap<String, ScoreGroup>> {
     public static final AssetBuilderCodec<String, ScoreGroup> CODEC = AssetBuilderCodec.builder(
@@ -123,6 +127,8 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
     @Nonnull
     protected String[] excludeHitboxTypes = new String[0];
 
+    private String[] matchingBlockIds;
+
     @Nonnull
     public static AssetStore<String, ScoreGroup, IndexedLookupTableAssetMap<String, ScoreGroup>> getAssetStore() {
         if (ASSET_STORE == null) {
@@ -155,34 +161,53 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
         this.excludeBlockGroups = other.excludeBlockGroups;
         this.includeHitboxTypes = other.includeHitboxTypes;
         this.excludeHitboxTypes = other.excludeHitboxTypes;
+
+        this.matchingBlockIds = other.matchingBlockIds;
     }
 
-    public boolean matches(BlockType type) {
-        for (String pattern : excludeBlockTypes) {
+    @Nonnull
+    public static List<String> findMatchingBlockIds(ScoreGroup scoreGroup) {
+        List<String> matchingBlockIds = new ArrayList<>();
+
+        for (BlockType type : BlockType.getAssetMap().getAssetMap().values()) {
+            if (ScoreGroup.matches(scoreGroup, type)) {
+                matchingBlockIds.add(type.getId());
+            }
+        }
+
+        return matchingBlockIds;
+    }
+
+    public static void addMatchingBlockIds(ScoreGroup scoreGroup) {
+        scoreGroup.matchingBlockIds = findMatchingBlockIds(scoreGroup).toArray(String[]::new);
+    }
+
+    public static boolean matches(ScoreGroup scoreGroup, BlockType type) {
+        for (String pattern : scoreGroup.excludeBlockTypes) {
             if (StringUtil.isGlobMatching(pattern, type.getId())) {
                 return false;
             }
         }
 
-        for (String group : excludeBlockGroups) {
+        for (String group : scoreGroup.excludeBlockGroups) {
             if (group.equals(type.getGroup())) {
                 return false;
             }
         }
 
-        for (String hitbox : excludeHitboxTypes) {
+        for (String hitbox : scoreGroup.excludeHitboxTypes) {
             if (hitbox.equals(type.getHitboxType())) {
                 return false;
             }
         }
 
-        if (includeAll) return true;
+        if (scoreGroup.includeAll) return true;
 
-        boolean typeMatches = includeBlockTypes.length == 0;
-        boolean groupMatches = includeBlockGroups.length == 0;
-        boolean hitboxMatches = includeHitboxTypes.length == 0;
+        boolean typeMatches = scoreGroup.includeBlockTypes.length == 0;
+        boolean groupMatches = scoreGroup.includeBlockGroups.length == 0;
+        boolean hitboxMatches = scoreGroup.includeHitboxTypes.length == 0;
 
-        for (String pattern : includeBlockTypes) {
+        for (String pattern : scoreGroup.includeBlockTypes) {
             if (StringUtil.isGlobMatching(pattern, type.getId())) {
                 typeMatches = true;
                 break;
@@ -190,7 +215,7 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
         }
 
         if (typeMatches) {
-            for (String group : includeBlockGroups) {
+            for (String group : scoreGroup.includeBlockGroups) {
                 if (group.equals(type.getGroup())) {
                     groupMatches = true;
                     break;
@@ -199,7 +224,7 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
         }
 
         if (groupMatches) {
-            for (String hitbox : includeHitboxTypes) {
+            for (String hitbox : scoreGroup.includeHitboxTypes) {
                 if (hitbox.equals(type.getHitboxType())) {
                     hitboxMatches = true;
                     break;
@@ -208,6 +233,11 @@ public class ScoreGroup implements JsonAssetWithMap<String, IndexedLookupTableAs
         }
 
         return typeMatches && groupMatches && hitboxMatches;
+    }
+
+    public String[] getMatchingBlockIds() {
+        if (matchingBlockIds == null) addMatchingBlockIds(this);
+        return matchingBlockIds;
     }
 
     @Override

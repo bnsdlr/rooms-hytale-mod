@@ -1,3 +1,4 @@
 {
-  "MinArea": 2147483647
+  "MinArea": 16,
+  "MaxArea": 49
 }

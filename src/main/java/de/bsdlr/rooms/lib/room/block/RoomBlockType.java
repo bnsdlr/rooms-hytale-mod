@@ -6,11 +6,8 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.codec.validation.ValidatorCache;
 import com.hypixel.hytale.codec.validation.Validators;
-import com.hypixel.hytale.common.util.StringUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import de.bsdlr.rooms.lib.asset.Light;
-import de.bsdlr.rooms.lib.asset.validators.PatternValidator;
 import de.bsdlr.rooms.lib.blocks.BlockPattern;
 import de.bsdlr.rooms.lib.room.RoomType;
 
@@ -56,7 +53,7 @@ public class RoomBlockType {
     protected int maxCount = Integer.MAX_VALUE;
     protected SimpleRoomBlockType[] logicOrs = new SimpleRoomBlockType[0];
 
-    private String[] blockIds = null;
+    private String[] matchingBlockIds = null;
 
     public RoomBlockType() {
     }
@@ -66,7 +63,7 @@ public class RoomBlockType {
         this.minCount = other.minCount;
         this.maxCount = other.maxCount;
         this.logicOrs = other.logicOrs;
-        this.blockIds = other.blockIds;
+        this.matchingBlockIds = other.matchingBlockIds;
     }
 
     @Nonnull
@@ -89,7 +86,7 @@ public class RoomBlockType {
     }
 
     public static void addMatchingBlockIds(@Nonnull RoomBlockType roomBlockType, RoomType roomType) {
-        roomBlockType.blockIds =
+        roomBlockType.matchingBlockIds =
                 RoomBlockType.getMatchingBlockIds(roomBlockType.getBlockPattern(), roomType).toArray(String[]::new);
     }
 
@@ -100,8 +97,8 @@ public class RoomBlockType {
     }
 
     public String[] getMatchingBlockIds() {
-        if (this.blockIds == null) addMatchingBlockIds(this);
-        return this.blockIds;
+        if (this.matchingBlockIds == null) addMatchingBlockIds(this);
+        return this.matchingBlockIds;
     }
 
     @Nonnull

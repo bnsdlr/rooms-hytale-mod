@@ -118,10 +118,6 @@ public class Room {
         return result;
     }
 
-    public RoomType getType() {
-        return RoomType.getAssetMap().getAsset(roomTypeId);
-    }
-
     @Nonnull
     public String getRoomTypeId() {
         return roomTypeId;
@@ -165,10 +161,6 @@ public class Room {
         int z = PositionUtils.unpack3dZ(key);
 
         return containsPos(x, y, z);
-    }
-
-    public boolean containsPos(Vector3i pos) {
-        return containsPos(pos.x, pos.y, pos.z);
     }
 
     public boolean containsPos(int x, int y, int z) {
@@ -348,8 +340,11 @@ public class Room {
                 if (type.getId().equals(BlockType.EMPTY_KEY)) continue;
 
                 for (ScoreGroup group : ScoreGroup.getAssetMap().getAssetMap().values()) {
-                    if (group.matches(type)) {
-                        score += group.getScore() * entry.getValue();
+                    for (String matchingBlockId : group.getMatchingBlockIds()) {
+                        if (type.getId().equals(matchingBlockId)) {
+                            score += group.getScore() * entry.getValue();
+                            break;
+                        }
                     }
                 }
 

@@ -8,9 +8,6 @@
 - [ ] DO SOME PERFORMANCE/MEMORY OPTIMIZATIONS...
   - [ ] ScoreGroup find all matching block ids at start?
 - [ ] rooms
-    - [ ] more complex room definitions
-      - [ ] block type
-    - [ ] buffs for having room
     - [ ] room info ui (where you can change the room type, every 5min, in game day or sth)
 - [ ] sets 
   - [ ] make sets way more responsible
@@ -22,4 +19,5 @@
 - [ ] if multiple rooms match, give ability to choose from them.
 - [ ] always add root block. the problem is that you cannot call a store method from a system... (at least I don't know how you could do that, or what else is the cause of the IllegalStateException
 - [ ] add plaza (doormat, carpet and no door required)
+- [ ] effects
 

@@ -20,6 +20,7 @@ import de.bsdlr.rooms.config.PluginConfig;
 import de.bsdlr.rooms.lib.asset.AssetMapWithGroup;
 import de.bsdlr.rooms.lib.asset.quality.Quality;
 import de.bsdlr.rooms.lib.blocks.PreferredBlockType;
+import de.bsdlr.rooms.lib.effects.Effect;
 import de.bsdlr.rooms.lib.room.block.BoundRoomBlockType;
 import de.bsdlr.rooms.lib.room.block.BoundRoomBlockTypeValidator;
 import de.bsdlr.rooms.lib.room.block.RoomBlockType;
