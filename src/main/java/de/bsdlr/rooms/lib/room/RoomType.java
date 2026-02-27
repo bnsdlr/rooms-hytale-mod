@@ -15,14 +15,17 @@ import com.hypixel.hytale.codec.validation.validator.ArrayValidator;
 import com.hypixel.hytale.common.util.StringUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.Color;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
 import de.bsdlr.rooms.config.PluginConfig;
 import de.bsdlr.rooms.lib.asset.AssetMapWithGroup;
 import de.bsdlr.rooms.lib.asset.quality.Quality;
 import de.bsdlr.rooms.lib.blocks.PreferredBlockType;
-import de.bsdlr.rooms.lib.effects.Effect;
 import de.bsdlr.rooms.lib.room.block.BoundRoomBlockType;
 import de.bsdlr.rooms.lib.room.block.BoundRoomBlockTypeValidator;
+import de.bsdlr.rooms.lib.room.block.RoomBlock;
 import de.bsdlr.rooms.lib.room.block.RoomBlockType;
 
 import javax.annotation.Nonnull;
@@ -443,7 +446,7 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
         return o1;
     }
 
-    public boolean matches(int area, Map<String, Integer> blockId2Count, Map<String, Integer> wallBlockId2Count, int wallBlockCount, Map<String, Integer> floorBlockId2Count, int floorBlockCount) {
+    public boolean matches(int area, Map<Long, RoomBlock> blocks, Map<String, Integer> blockId2Count, Map<String, Integer> wallBlockId2Count, int wallBlockCount, Map<String, Integer> floorBlockId2Count, int floorBlockCount) {
         LOGGER.atInfo().log("===== Start matching room. =====");
         if (area < minArea) {
             LOGGER.atWarning().log("%d does not match: minArea is %d; area is: %d", id, minArea, area);
@@ -467,6 +470,26 @@ public class RoomType implements JsonAssetWithMap<String, AssetMapWithGroup<Stri
             if (blockType.getMinCount() > count || blockType.getMaxCount() < count) {
                 LOGGER.atWarning().log("%s does not match: count %d is not in [%d, %d] (pattern: %s)", id, count, blockType.getMinCount(), blockType.getMaxCount(), blockType.getBlockPattern());
                 return false;
+            }
+
+            if (blockType.getBlockSurroundings() != null && blockType.getBlockSurroundings().getSurroundingBlocks() != null && blockType.getBlockSurroundings().getSurroundingBlocks().length > 0) {
+                for (RoomBlock roomBlock : blocks.values()) {
+                    boolean matches = false;
+                    for (String matchingBlockId : blockType.getMatchingBlockIds()) {
+                        if (matchingBlockId.equals(roomBlock.getType().getId())) {
+                            matches = true;
+                            break;
+                        }
+                    }
+                    if (matches) {
+                        boolean surroundingBlocksMatch = blockType.getBlockSurroundings().matches(roomBlock, blocks, blockType.getMinCount());
+                        LOGGER.atInfo().log("!!! matches, checking surrounding blocks. (blockId: %s; surrounding blocks match: %s)", roomBlock.getType().getId(), surroundingBlocksMatch);
+                        if (!surroundingBlocksMatch) {
+                            LOGGER.atWarning().log("surrounding blocks dont match for %s", roomBlock.getType().getId());
+                            return false;
+                        }
+                    }
+                }
             }
         }
 

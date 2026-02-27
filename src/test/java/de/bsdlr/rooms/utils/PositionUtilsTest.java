@@ -1,6 +1,5 @@
 package de.bsdlr.rooms.utils;
 
-import com.hypixel.hytale.function.consumer.TriConsumer;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import org.junit.jupiter.api.Test;
@@ -124,11 +123,11 @@ class PositionUtilsTest {
 
     // Test forOffsetInRadius iteration count
     @Test
-    void testForOffsetInRadius_IterationCount() {
+    void testForBlockInRadius_IterationCount() {
         Vector3i radius = new Vector3i(2, 2, 2); // Should iterate (2*2-1)^3 = 27 times
         AtomicInteger counter = new AtomicInteger(0);
 
-        PositionUtils.forOffsetInRadius(radius, (x, y, z) -> {
+        PositionUtils.forBlockInRadius(radius, (x, y, z) -> {
             counter.incrementAndGet();
             return null;
         });
@@ -139,10 +138,10 @@ class PositionUtilsTest {
 
     // Test forOffsetInRadius with collection
     @Test
-    void testForOffsetInRadius_WithCollection() {
+    void testForBlockInRadius_WithCollection() {
         Vector3i radius = new Vector3i(2, 2, 2);
 
-        List<String> results = PositionUtils.forOffsetInRadius(
+        List<String> results = PositionUtils.forBlockInRadius(
                 radius,
                 (x, y, z) -> x + "," + y + "," + z,
                 ArrayList::new
@@ -154,11 +153,11 @@ class PositionUtilsTest {
     }
 
     @Test
-    void testForOffsetInRadius_NullFiltering() {
+    void testForBlockInRadius_NullFiltering() {
         Vector3i radius = new Vector3i(2, 2, 2);
 
         // Only add non-zero offsets
-        List<Vector3i> results = PositionUtils.forOffsetInRadius(
+        List<Vector3i> results = PositionUtils.forBlockInRadius(
                 radius,
                 (x, y, z) -> (x == 0 && y == 0 && z == 0) ? null : new Vector3i(x, y, z),
                 ArrayList::new

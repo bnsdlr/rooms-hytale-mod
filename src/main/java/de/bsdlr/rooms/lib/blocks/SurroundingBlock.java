@@ -1,13 +1,18 @@
 package de.bsdlr.rooms.lib.blocks;
 
-import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
+import com.hypixel.hytale.codec.codecs.EnumCodec;
+import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
+import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.Rotation;
+import de.bsdlr.rooms.lib.asset.validators.NoDuplicateValidator;
 
 import javax.annotation.Nonnull;
 
 public class SurroundingBlock {
+    public static final NoDuplicateValidator<SurroundingBlock> NO_DUPLICATE_IN_ARRAY_VALIDATOR = new NoDuplicateValidator<>((s1, s2) -> s1.offset.equals(s2.offset), "There shouldn't be duplicate offsets.");
     public static final BuilderCodec<SurroundingBlock> CODEC = BuilderCodec.builder(SurroundingBlock.class, SurroundingBlock::new)
             .appendInherited(new KeyedCodec<>("BlockPattern", BlockPattern.CODEC),
                     (surroundingBlock, s) -> surroundingBlock.blockPattern = s,

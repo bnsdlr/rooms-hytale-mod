@@ -7,7 +7,29 @@
         "BlockIdPattern": "*Table*"
       }
     },
-    {}
+    {
+      "BlockPattern": {
+        "Light": {
+          "Enabled": true
+        },
+        "BlockIdPattern": "*"
+      },
+      "BlockSurroundings": {
+        "SurroundingBlocks": [
+          {
+            "Offset": {
+              "Y": -1,
+              "X": 0,
+              "Z": 0
+            },
+            "BlockPattern": {
+              "BlockIdPattern": "*Table*"
+            }
+          }
+        ]
+      },
+      "MinCount": 1
+    }
   ],
   "Group": "Social_Space"
 }

@@ -12,21 +12,21 @@ public class PositionUtils {
     public static final int TWO_TO_THE_POWER_OF_TWENTY_FIVE = 33554432;
     public static final int TWO_TO_THE_POWER_OF_TWENTY_SIX = 67108864;
 
-    public static void forOffsetInRadius(Vector3i radius, TriFunction<Integer, Integer, Integer, Void> f) {
-        forOffsetInRadius(radius, 0, 0, 0, f);
+    public static void forBlockInRadius(Vector3i radius, TriFunction<Integer, Integer, Integer, Void> f) {
+        forBlockInRadius(radius, 0, 0, 0, f);
     }
 
-    public static void forOffsetInRadius(Vector3i radius, Vector3i offSet, TriFunction<Integer, Integer, Integer, Void> f) {
-        forOffsetInRadius(radius, offSet.x, offSet.y, offSet.z, f);
+    public static void forBlockInRadius(Vector3i radius, Vector3i offset, TriFunction<Integer, Integer, Integer, Void> f) {
+        forBlockInRadius(radius, offset.x, offset.y, offset.z, f);
     }
 
-    public static void forOffsetInRadius(Vector3i radius, int offSetX, int offSetY, int offSetZ, TriFunction<Integer, Integer, Integer, Void> f) {
-        int minRX = offSetX - radius.x + 1;
-        int minRY = offSetY - radius.y + 1;
-        int minRZ = offSetZ - radius.z + 1;
-        int maxRX = offSetX + radius.x;
-        int maxRY = offSetY + radius.y;
-        int maxRZ = offSetZ + radius.z;
+    public static void forBlockInRadius(Vector3i radius, int offsetX, int offsetY, int offsetZ, TriFunction<Integer, Integer, Integer, Void> f) {
+        int minRX = offsetX - radius.x + 1;
+        int minRY = offsetY - radius.y + 1;
+        int minRZ = offsetZ - radius.z + 1;
+        int maxRX = offsetX + radius.x;
+        int maxRY = offsetY + radius.y;
+        int maxRZ = offsetZ + radius.z;
 
         for (int dx = minRX; dx < maxRX; dx++) {
             for (int dy = minRY; dy < maxRY; dy++) {
@@ -37,23 +37,23 @@ public class PositionUtils {
         }
     }
 
-    public static <R, C extends Collection<R>> C forOffsetInRadius(Vector3i radius, TriFunction<Integer, Integer, Integer, R> f, Supplier<C> supplier) {
-        return forOffsetInRadius(radius, 0, 0, 0, f, supplier);
+    public static <R, C extends Collection<R>> C forBlockInRadius(Vector3i radius, TriFunction<Integer, Integer, Integer, R> f, Supplier<C> supplier) {
+        return forBlockInRadius(radius, 0, 0, 0, f, supplier);
     }
 
-    public static <R, C extends Collection<R>> C forOffsetInRadius(Vector3i radius, Vector3i offSet, TriFunction<Integer, Integer, Integer, R> f, Supplier<C> supplier) {
-        return forOffsetInRadius(radius, offSet.x, offSet.y, offSet.z, f, supplier);
+    public static <R, C extends Collection<R>> C forBlockInRadius(Vector3i radius, Vector3i offset, TriFunction<Integer, Integer, Integer, R> f, Supplier<C> supplier) {
+        return forBlockInRadius(radius, offset.x, offset.y, offset.z, f, supplier);
     }
 
-    public static <R, C extends Collection<R>> C forOffsetInRadius(Vector3i radius, int offSetX, int offSetY, int offSetZ, TriFunction<Integer, Integer, Integer, R> f, Supplier<C> supplier) {
+    public static <R, C extends Collection<R>> C forBlockInRadius(Vector3i radius, int offsetX, int offsetY, int offsetZ, TriFunction<Integer, Integer, Integer, R> f, Supplier<C> supplier) {
         C results = supplier.get();
 
-        int minRX = offSetX - radius.x + 1;
-        int minRY = offSetY - radius.y + 1;
-        int minRZ = offSetZ - radius.z + 1;
-        int maxRX = offSetX + radius.x;
-        int maxRY = offSetY + radius.y;
-        int maxRZ = offSetZ + radius.z;
+        int minRX = offsetX - radius.x + 1;
+        int minRY = offsetY - radius.y + 1;
+        int minRZ = offsetZ - radius.z + 1;
+        int maxRX = offsetX + radius.x;
+        int maxRY = offsetY + radius.y;
+        int maxRZ = offsetZ + radius.z;
 
         for (int dx = minRX; dx < maxRX; dx++) {
             for (int dy = minRY; dy < maxRY; dy++) {
@@ -144,70 +144,4 @@ public class PositionUtils {
     public static int unpack2dZ(long key) {
         return (int) key;
     }
-
-//    public static Vector3i positionToVector3i(Vector3d position) {
-//        int posX = (position.x < 0) ? (int) Math.floor(position.x) : (int) position.x;
-//        int posY = (int) position.y;
-//        int posZ = (position.z < 0) ? (int) Math.floor(position.z) : (int) position.z;
-//        return new Vector3i(posX, posY, posZ);
-//    }
-//
-////    public static long encodePosition(Vector3i vec) {
-////        return encodePosition(vec.x, vec.y, vec.z);
-////    }
-////
-////    public static long encodePosition(int x, int y, int z) {
-////        return ((long) (x & 0x3FFFFFF) << 38) |
-////                ((long) (z & 0x3FFFFFF) << 12) |
-////                ((long) (y & 0xFFF));
-////    }
-//
-//    public static long encodePosition(Vector3d vec) {
-//        return encodePosition(vec.x, vec.y, vec.z);
-//    }
-//
-//    public static long encodePosition(double x, double y, double z) {
-//        return ((long) ((int) x & 0x3FFFFFF) << 38) |
-//                ((long) ((int) z & 0x3FFFFFF) << 12) |
-//                ((long) ((int) y & 0x1FF) << 3) |
-//                ((long) ((int) (x * 2) & 1) << 2) |
-//                ((long) ((int) (z * 2) & 1) << 1) |
-//                ((long) ((int) (y * 2) & 1));
-//    }
-//
-//    public static double decodeX(long key) {
-//        int decoded = (int) ((key >> 38) & 0x3FFFFFF);
-//        boolean isNeg = (decoded & 0x2000000) != 0;
-//
-//        if (isNeg) decoded |= 0xFC000000;
-//
-//        if (((key >> 2) & 1) == 1) {
-//            return isNeg ? (double)decoded - 0.5 : (double)decoded + 0.5;
-//        }
-//
-//        return decoded;
-//    }
-//
-//    public static double decodeY(long key) {
-//        int decoded = (int) ((key >> 3) & 0x1FF);
-//
-//        if ((key & 1) == 1) {
-//            return decoded + 0.5;
-//        }
-//
-//        return decoded;
-//    }
-//
-//    public static double decodeZ(long key) {
-//        int decoded = (int) ((key >> 12) & 0x3FFFFFF);
-//        boolean isNeg = (decoded & 0x2000000) != 0;
-//
-//        if (isNeg) decoded |= 0xFC000000;
-//
-//        if (((key >> 1) & 1) == 1) {
-//            return isNeg ? (double) decoded - 0.5 : (double) decoded + 0.5;
-//        }
-//
-//        return decoded;
-//    }
 }

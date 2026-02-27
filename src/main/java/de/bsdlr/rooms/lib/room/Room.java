@@ -15,11 +15,13 @@ import de.bsdlr.rooms.RoomsPlugin;
 import de.bsdlr.rooms.config.PluginConfig;
 import de.bsdlr.rooms.lib.asset.score.ScoreGroup;
 import de.bsdlr.rooms.lib.exceptions.FailedToDetectRoomException;
-import de.bsdlr.rooms.lib.room.block.BoundRoomBlockType;
 import de.bsdlr.rooms.lib.room.block.RoomBlock;
 import de.bsdlr.rooms.lib.room.block.RoomBlockRole;
 import de.bsdlr.rooms.lib.room.block.RoomBlockType;
-import de.bsdlr.rooms.utils.*;
+import de.bsdlr.rooms.utils.PackedBox;
+import de.bsdlr.rooms.utils.PositionUtils;
+import de.bsdlr.rooms.utils.RoomUtils;
+import de.bsdlr.rooms.utils.TripleOf;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -28,6 +30,11 @@ import java.util.function.Predicate;
 
 public class Room {
     public static final BuilderCodec<Room> CODEC = BuilderCodec.builder(Room.class, Room::new)
+            .append(new KeyedCodec<>("UUID", Codec.UUID_BINARY),
+                    (room, s) -> room.uuid = s,
+                    room -> room.uuid)
+            .addValidator(Validators.nonNull())
+            .add()
             .append(new KeyedCodec<>("Id", Codec.STRING),
                     (room, s) -> room.roomTypeId = s,
                     room -> room.roomTypeId)
@@ -58,6 +65,8 @@ public class Room {
             .add()
             .build();
     @Nonnull
+    protected UUID uuid;
+    @Nonnull
     protected String roomTypeId;
     @Nonnull
     protected String[] matchingRoomTypeIds;
@@ -71,6 +80,7 @@ public class Room {
     protected int area;
 
     Room() {
+        this.uuid = UUID.randomUUID();
         this.roomTypeId = RoomType.DEFAULT_KEY;
         this.matchingRoomTypeIds = new String[]{RoomType.DEFAULT_KEY};
         this.boxes = new HashSet<>();
@@ -81,6 +91,7 @@ public class Room {
         if (matchingRoomTypeIds == null) matchingRoomTypeIds = new String[]{RoomType.DEFAULT_KEY};
         else Arrays.sort(matchingRoomTypeIds);
 
+        this.uuid = UUID.randomUUID();
         this.roomTypeId = roomTypeId;
         this.matchingRoomTypeIds = matchingRoomTypeIds;
         this.worldUuid = worldUuid;
@@ -182,7 +193,6 @@ public class Room {
         private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
         private final PluginConfig config;
         private final Map<Long, RoomBlock> blocks = new HashMap<>();
-        private final Map<Long, RoomBlock> fillerBlocks = new HashMap<>();
         private UUID worldUuid;
         private int maxY;
         private int minY;
@@ -212,6 +222,8 @@ public class Room {
             Map<String, Integer> floorBlockId2Count = new HashMap<>();
 
             for (Map.Entry<Long, RoomBlock> entry : blocks.entrySet()) {
+                if (entry.getValue().isFiller()) continue;
+
                 int kindOfWall = RoomBlockRole.whatKindOfWall(entry.getKey(), entry.getValue(), blocks);
                 if (kindOfWall == RoomBlockRole.SOLID_IS_WALL) {
                     wallBlockId2Count.merge(entry.getValue().getType().getId(), 1, Integer::sum);
@@ -227,23 +239,16 @@ public class Room {
         private Map<Long, Map<Integer, Boolean>> xz2IsRoomWall() {
             Map<Long, Map<Integer, Boolean>> xz2isRoomWall = new HashMap<>();
 
-            addBlocksToY2isRoomWall(xz2isRoomWall, blocks.values());
-            addBlocksToY2isRoomWall(xz2isRoomWall, fillerBlocks.values());
-
-            return xz2isRoomWall;
-        }
-
-        private void addBlocksToY2isRoomWall(Map<Long, Map<Integer, Boolean>> y2isRoomWall, Collection<RoomBlock> blocks) {
-//            World world = Universe.get().getWorld(worldUuid);
-
-            for (RoomBlock block : blocks) {
+            for (RoomBlock block : blocks.values()) {
                 long key = PositionUtils.pack2dPos(block.getX(), block.getZ());
-                y2isRoomWall.computeIfAbsent(key, k -> new HashMap<>()).put(block.getY(), block.getRole().isRoomBound());
+                xz2isRoomWall.computeIfAbsent(key, k -> new HashMap<>()).put(block.getY(), block.getRole().isRoomBound());
 //                if (world != null && config.isTestBlockEnabled()) {
 //                    if (block.getRole().isRoomWall())
 //                        world.setBlock(block.getX(), block.getY(), block.getZ(), config.getTestBlockId());
 //                }
             }
+
+            return xz2isRoomWall;
         }
 
         private int findArea() {
@@ -298,7 +303,8 @@ public class Room {
             }
 
             for (RoomType type : RoomType.getAssetMap().getAssetMap().values()) {
-                boolean matches = type.matches(area, blockId2Count, wallBlockId2Count, wallBlockCount, floorBlockId2Count, floorBlockCount);
+                boolean matches = type.matches(area, blocks, blockId2Count, wallBlockId2Count, wallBlockCount, floorBlockId2Count, floorBlockCount);
+
                 if (matches) {
                     matching.add(type);
                     LOGGER.atInfo().log("room %s matches", type.getId());
@@ -323,11 +329,7 @@ public class Room {
 
         @Nonnull
         private Set<PackedBox> getPackedBoxes() {
-            Set<Long> blocks = new HashSet<>();
-
-            blocks.addAll(this.blocks.keySet());
-            blocks.addAll(this.fillerBlocks.keySet());
-
+            Set<Long> blocks = new HashSet<>(this.blocks.keySet());
             return RoomUtils.compress(blocks);
         }
 
@@ -378,11 +380,7 @@ public class Room {
 
         public void addBlock(RoomBlock roomBlock) {
             long key = PositionUtils.pack3dPos(roomBlock.getPos());
-            if (roomBlock.isFiller()) {
-                this.fillerBlocks.put(key, roomBlock);
-            } else {
-                this.blocks.put(key, roomBlock);
-            }
+            this.blocks.put(key, roomBlock);
         }
 
         public void removeIf(Predicate<Map.Entry<Long, RoomBlock>> f) {

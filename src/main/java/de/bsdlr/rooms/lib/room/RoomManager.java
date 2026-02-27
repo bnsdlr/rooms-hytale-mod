@@ -2,9 +2,8 @@ package de.bsdlr.rooms.lib.room;
 
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.codec.codecs.set.SetCodec;
+import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
@@ -13,7 +12,7 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import de.bsdlr.rooms.RoomsPlugin;
 import de.bsdlr.rooms.lib.exceptions.FailedToDetectRoomException;
-import de.bsdlr.rooms.utils.PackedBox;
+import de.bsdlr.rooms.lib.room.combination.RoomCombination;
 import de.bsdlr.rooms.utils.PositionUtils;
 
 import java.util.*;
@@ -21,28 +20,29 @@ import java.util.*;
 public class RoomManager {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     public static final BuilderCodec<RoomManager> CODEC = BuilderCodec.builder(RoomManager.class, RoomManager::new)
-            .append(new KeyedCodec<>("Rooms", new SetCodec<>(Room.CODEC, HashSet::new, false)),
+            .append(new KeyedCodec<>("Rooms", new ArrayCodec<>(Room.CODEC, Room[]::new)),
                     (manager, rooms) -> {
                         for (Room room : rooms) {
-                            manager.addRoom(room);
+                            manager.addRoom(room, false);
                         }
                     },
-                    RoomManager::getRooms)
+                    manager -> manager.rooms.values().toArray(Room[]::new))
+            .add()
+            .append(new KeyedCodec<>("RoomCombinations", new ArrayCodec<>(RoomCombination.CODEC, RoomCombination[]::new)),
+                    (manager, roomCombinations) -> {
+                        for (RoomCombination roomCombination : roomCombinations) {
+                            manager.addRoomCombination(roomCombination);
+                        }
+                    },
+                    manager->manager.roomUuid2RoomCombination.values().toArray(RoomCombination[]::new))
             .add()
             .build();
-    protected final Set<Room> rooms;
+    protected final Map<UUID, Room> rooms;
+    protected final Map<UUID, RoomCombination> roomUuid2RoomCombination;
 
     public RoomManager() {
-        rooms = new HashSet<>();
-    }
-
-    public Set<Room> getRooms() {
-        return rooms;
-    }
-
-    public Room getRoom(Vector3d position) {
-        Vector3i pos = PositionUtils.positionToVector3i(position);
-        return getRoom(pos.x, pos.y, pos.z);
+        rooms = new HashMap<>();
+        roomUuid2RoomCombination = new HashMap<>();
     }
 
     public Room getRoom(long key) {
@@ -54,20 +54,48 @@ public class RoomManager {
     }
 
     public Room getRoom(int x, int y, int z) {
-        for (Room room : rooms) {
+        for (Room room : rooms.values()) {
             if (room.containsPos(x, y, z)) return room;
         }
         return null;
     }
 
     public void addRoom(Room room) {
-        LOGGER.atInfo().log("Adding room: %s", room.roomTypeId);
-        rooms.add(room);
+        addRoom(room, true);
+    }
+
+    public void addRoom(Room newRoom, boolean lookForCombinations) {
+        LOGGER.atInfo().log("Adding new room: %s (%s)", newRoom.roomTypeId, newRoom.uuid);
+
+        if (lookForCombinations) {
+            for (Room room : rooms.values()) {
+
+            }
+        }
+
+        rooms.put(newRoom.uuid, newRoom);
+    }
+
+    public void addRoomCombination(RoomCombination combination) {
+        for (UUID roomUuid : combination.getRoomUuids()) {
+            roomUuid2RoomCombination.put(roomUuid, combination);
+        }
     }
 
     public void removeRoom(Room room) {
-        LOGGER.atInfo().log("Removing room: %s", room.roomTypeId);
-        rooms.remove(room);
+        LOGGER.atInfo().log("Removing room: %s (%s)", room.roomTypeId, room.uuid);
+        rooms.remove(room.uuid);
+
+        RoomCombination roomCombination = roomUuid2RoomCombination.get(room.uuid);
+
+        if (roomCombination != null) {
+            roomCombination.getRoomUuids().remove(room.uuid);
+            if (!roomCombination.isValid()) {
+                for (UUID roomUuid : roomCombination.getRoomUuids()) {
+                    roomUuid2RoomCombination.remove(roomUuid);
+                }
+            }
+        }
     }
 
     public void updateAround(World world, Vector3i target, Map<Long, BlockType> overrideBlocks) {
@@ -86,7 +114,7 @@ public class RoomManager {
             }
         }
 
-        Set<Room> rooms = PositionUtils.forOffsetInRadius(scanRadius, target, (bx, by, bz) -> {
+        Set<Room> rooms = PositionUtils.forBlockInRadius(scanRadius, target, (bx, by, bz) -> {
             long key = PositionUtils.pack3dPos(bx, by, bz);
 
             Room room = getRoom(key);
@@ -95,6 +123,7 @@ public class RoomManager {
                 Room detectedRoom = RoomDetector.getRoomAt(world, bx, by, bz, overrideBlocks);
 
                 LOGGER.atInfo().log("detected room: %s (at %d %d %d)", detectedRoom, bx, by, bz);
+                if (detectedRoom == null) return null;
 
                 if (room != null) {
                     if (!room.equals(detectedRoom)) {

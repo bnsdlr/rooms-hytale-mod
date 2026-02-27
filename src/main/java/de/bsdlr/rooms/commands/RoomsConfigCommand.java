@@ -7,7 +7,6 @@ import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.arguments.system.FlagArg;
 import com.hypixel.hytale.server.core.command.system.arguments.system.OptionalArg;
-import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -17,7 +16,6 @@ import de.bsdlr.rooms.RoomsPlugin;
 import de.bsdlr.rooms.utils.PositionUtils;
 
 import javax.annotation.Nonnull;
-import java.util.Map;
 
 public class RoomsConfigCommand extends AbstractPlayerCommand {
     private OptionalArg<Vector3i> scanRadiusArg;
@@ -49,7 +47,7 @@ public class RoomsConfigCommand extends AbstractPlayerCommand {
         String blockId = ctx.get(placeBlockArg);
 
         if (blockId != null) {
-            PositionUtils.forOffsetInRadius(newScanRadius, (dx, dy, dz) -> {
+            PositionUtils.forBlockInRadius(newScanRadius, (dx, dy, dz) -> {
                 int bx = dx + pos.x;
                 int by = dy + pos.y;
                 int bz = dz + pos.z;

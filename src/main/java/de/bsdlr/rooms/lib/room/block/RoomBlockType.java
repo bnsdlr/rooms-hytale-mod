@@ -10,6 +10,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import de.bsdlr.rooms.lib.blocks.BlockPattern;
 import de.bsdlr.rooms.lib.blocks.BlockSurroundings;
+import de.bsdlr.rooms.lib.blocks.SurroundingBlock;
 import de.bsdlr.rooms.lib.room.RoomType;
 
 import javax.annotation.Nonnull;
@@ -47,6 +48,11 @@ public class RoomBlockType {
             )
             .documentation("All counts are added and used to check if enough (and not to much) blocks are present.")
             .add()
+            .appendInherited(new KeyedCodec<>("BlockSurroundings", BlockSurroundings.CODEC),
+                    (blockSurroundings, s) -> blockSurroundings.blockSurroundings = s,
+                    blockSurroundings -> blockSurroundings.blockSurroundings,
+                    (blockSurroundings, parent) -> blockSurroundings.blockSurroundings = parent.blockSurroundings)
+            .add()
             .build();
     @Nonnull
     protected BlockPattern blockPattern = new BlockPattern();
@@ -65,6 +71,8 @@ public class RoomBlockType {
         this.minCount = other.minCount;
         this.maxCount = other.maxCount;
         this.logicOrs = other.logicOrs;
+        this.blockSurroundings = other.blockSurroundings;
+
         this.matchingBlockIds = other.matchingBlockIds;
     }
 
@@ -118,6 +126,10 @@ public class RoomBlockType {
 
     public SimpleRoomBlockType[] getLogicOrs() {
         return logicOrs;
+    }
+
+    public BlockSurroundings getBlockSurroundings() {
+        return blockSurroundings;
     }
 
     public double getCount(Map<String, Integer> blockId2Count) {
